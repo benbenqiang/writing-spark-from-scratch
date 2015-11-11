@@ -8,7 +8,7 @@ import akka.actor.Actor.Receive
  * Created by applelab on 2015/11/10
  */
 
-//actor之间通讯都是使用case class
+//actor之间通讯都是使用case class或者object，实现了序列化、hashcode和equals，用于模式匹配
 case class Done()
 case class Greet()
 
@@ -33,6 +33,7 @@ object Main {
 class Watcher(ref:ActorRef) extends Actor with ActorLogging{
   context watch ref
 
+  //定义actor的响应行为
   override def receive: Actor.Receive = {
     case Terminated(_) =>
       log.info("{} has terminated ,shutting down system",ref.path)
@@ -44,9 +45,12 @@ class Watcher(ref:ActorRef) extends Actor with ActorLogging{
  * 接受信息的Actor
  */
 class Receiver extends Actor{
+
+  //定义actor的响应行为
   override def receive: Receive = {
     case Greet =>
       println("receiving greeting")
+      //akka中传递信息使用 ！
       sender ! Done
     case Done =>
       println("receiver shutdown")
@@ -60,10 +64,12 @@ class Receiver extends Actor{
  */
 class Sender(actor:ActorRef) extends Actor{
 
+  //actor启动前执行的内容
   override def preStart()={
     actor ! Greet
   }
 
+  //定义actor的响应行为
   override def receive: Actor.Receive = {
     case Done =>
       println("back message")

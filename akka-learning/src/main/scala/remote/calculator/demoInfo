@@ -1,0 +1,16 @@
+我们之所以使用akka，是因为计算任务已经超过了单机极限，因此才需要将任务分布式运行，而akka给我们提供了编写分布式并发程序的接口。
+
+本demo主要目的是连接远程actorSystem，并在远程system而不是本地system建立actor，来计算任务
+
+
+CalculatorActor : 真正做计算，也就是真正干活的Actor,被CreationActor创建
+
+CreationActor: 如果接受到计算任务，每接受一个任务创建一个CalculatorActor
+               如果接受到的是计算结果，则输出，并停止子actor
+
+RemoteWorker：建立好actorSystem后，等待任务到来
+
+RemoteCreation：连接RemoteWorker，并通过远程连接在remoteWorker中初始化actor完成任务计算。
+                也就是在remoteWorker中执行任务。
+
+MathOp:Actor传递信息所需要的case class

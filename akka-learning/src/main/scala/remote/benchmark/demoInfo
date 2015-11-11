@@ -1,0 +1,8 @@
+我们之所以使用akka，是因为计算任务已经超过了单机极限，因此才需要将任务分布式运行，而akka给我们提供了编写分布式并发程序的接口。
+
+本demo主要目的是连接远程actor，并向其发送数据，接受其反馈。
+
+Receiver.scala：接受Sender的信息，并将相同的信息反馈给Sender
+
+Sender.scala 采用lookup方式连接Receiver，若Receiver未启动，则每过3秒访问一次。
+             建立好连接后，分批向Receiver发送数据，并且每500毫秒记录输出最近一个周期的吞吐量
