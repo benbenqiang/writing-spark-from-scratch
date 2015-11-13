@@ -17,4 +17,8 @@ trait Logging {
     log.debug(msg)
   }
 
+  def logError(msg:String)={
+    log.error(msg)
+  }
+
 }

@@ -1,5 +1,7 @@
 package org.scu.spark.rpc.akka
 
+import java.util.concurrent.ConcurrentHashMap
+
 import akka.actor.{ExtendedActorSystem, ActorRef, ActorSystem, Props}
 import org.scu.spark.Logging
 
@@ -10,6 +12,11 @@ import scala.concurrent.{Await, Future}
  * Created by bbq on 2015/11/11
  */
 class AkkaRpcEnv(private val actorSystem: ActorSystem) extends Logging {
+
+  /**
+   * RpcEnv下所包含的actor名称对应Ref表
+   */
+  val actornameToRef = new ConcurrentHashMap[String,ActorRef]()
 
   val address : RpcAddress = {
     val defaultAddress = actorSystem.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
@@ -22,10 +29,12 @@ class AkkaRpcEnv(private val actorSystem: ActorSystem) extends Logging {
   val defaultLookupTimeout = FiniteDuration(10, SECONDS)
 
   /**
-   * 创建actor
+   * 创建actor,并将创建的actor添加到map中
    */
   def doCreateActor(props: Props, actorName: String): ActorRef = {
-    actorSystem.actorOf(props, actorName)
+    val ref = actorSystem.actorOf(props, actorName)
+    actornameToRef.put(actorName,ref)
+    ref
   }
 
   /**
