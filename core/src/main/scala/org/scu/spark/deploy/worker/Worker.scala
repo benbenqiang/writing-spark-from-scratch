@@ -2,6 +2,7 @@ package org.scu.spark.deploy.worker
 
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.concurrent.{TimeUnit, Executors}
 
 import akka.actor.{PoisonPill, Actor, ActorRef, Props}
 import akka.pattern.ask
@@ -30,6 +31,7 @@ class Worker(
   private val port = rpcEnv.address.port
   private var master: Option[ActorRef] = None
   private val workerId = generateWorkerId()
+  private val HEARTBEAT_MILLIS= 30 * 1000
 
   override def preStart() = {
     logInfo("Starting Spark worker")
@@ -80,6 +82,9 @@ class Worker(
     msg match {
       case RegisteredWorker() =>
         changeMaster(master)
+        Executors.newScheduledThreadPool(1).scheduleAtFixedRate(new Runnable {
+          override def run(): Unit = self ! SendHeartbeat
+        },0,HEARTBEAT_MILLIS,TimeUnit.MILLISECONDS)
       case RegisterWorkerFaild(str) =>
         logError("Worker registration failed: " + str)
     }
@@ -90,7 +95,6 @@ class Worker(
    */
   def changeMaster(masterRef: ActorRef) = {
     master = Some(masterRef)
-    self ! SendHeartbeat
   }
 
   /**
@@ -108,7 +112,7 @@ object Worker extends Logging {
   val ACTOR_NAME = "Worker"
 
   def main(args: Array[String]) {
-    val rpcConfig = new RpcEnvConfig(SYSTEM_NAME, "127.0.0.1", 60006)
+    val rpcConfig = new RpcEnvConfig(SYSTEM_NAME, "127.0.0.1", 60008)
     val masterRpcAddress = RpcAddress("127.0.0.1", 60005)
     val rpcEnv = new AkkaRpcEnv(AkkaUtil.doCreateActorSystem(rpcConfig))
     val actorRef = rpcEnv.doCreateActor(Props(classOf[Worker], rpcEnv, masterRpcAddress, 2, 1024), ACTOR_NAME)

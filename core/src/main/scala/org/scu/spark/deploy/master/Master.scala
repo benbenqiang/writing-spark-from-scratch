@@ -31,11 +31,12 @@ class Master extends Actor with Logging {
       sender() ! RegisteredWorker()
 
     case Heartbeat(workerId)=>
-      logDebug("Receive HeartBeat")
       idToWorker.get(workerId) match {
         case Some(workInfo) =>
           workInfo.lastHeartbeat = System.currentTimeMillis()
-          logInfo(s"Receving from $workerId")
+          logDebug(s"Receiving HeartBeet from $workerId")
+        case None =>
+          logError(s"Got heartbeat from unregistered worker $workerId")
       }
   }
 }
