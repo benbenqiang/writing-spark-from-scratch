@@ -1,5 +1,7 @@
 package org.scu.spark
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.actor.{Actor, Props}
 import org.scu.spark.rpc.akka.{AkkaRpcEnv, AkkaUtil, RpcEnvConfig}
 
@@ -16,21 +18,20 @@ import scala.util.{Failure, Success, Try}
  */
 class SparkContext extends Logging {
 
+  /**
+   * 下一个RDD的ID
+   */
+  val nextRddId = new AtomicInteger(0)
+
+  def newRddId() = nextRddId.getAndIncrement()
+
+  def parallelize[T](seq:Seq[T],numSlices:Int = 3)={
+
+  }
 }
 
 object SparkContext {
   def main(args: Array[String]) {
-    //RegisteredWorker.asInstanceOf[RegisterWorkerResponse]
-    import scala.concurrent.ExecutionContext.Implicits.global
-    val future = Future {
-      Thread.sleep(4000)
-      1+1
-    }
-//    val result = Await.result(future,2 seconds)
-//    println(result)
-    future.onComplete{
-      case Success(msg) => println("onComplete:"+msg)
-      case Failure(msg) => println("Faild"+msg)
-    }
+
   }
 }
