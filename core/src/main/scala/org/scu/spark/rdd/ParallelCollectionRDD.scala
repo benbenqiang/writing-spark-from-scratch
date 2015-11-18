@@ -7,7 +7,7 @@ import org.scu.spark.{Partition, SparkContext}
  */
 class ParallelCollectionRDD[T](sc: SparkContext,
                                @transient seq: Seq[T],
-                               numSlices: Int) extends RDD(sc, Nil) {
+                               numSlices: Int) extends RDD[T](sc, Nil) {
 
   override def getPartition: Array[Partition] = {
     //先将数据分片
@@ -24,7 +24,7 @@ class ParallelCollectionRDD[T](sc: SparkContext,
 
 object ParallelCollectionRDD {
   def slice[T](seq: Seq[T], numSlice: Int): Seq[Seq[T]] = {
-     ???
+    seq.grouped(numSlice).toSeq
   }
 }
 

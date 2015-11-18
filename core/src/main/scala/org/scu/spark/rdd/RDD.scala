@@ -44,4 +44,6 @@ abstract class RDD[T](
     new MapPartitionsRDD[U,T](this,(id,iter)=>iter.map(f))
   }
 
+//  def count():Long = sc.runJob
+
 }

@@ -3,6 +3,7 @@ package org.scu.spark
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.{Actor, Props}
+import org.scu.spark.rdd.{RDD, ParallelCollectionRDD}
 import org.scu.spark.rpc.akka.{AkkaRpcEnv, AkkaUtil, RpcEnvConfig}
 
 import scala.concurrent.duration._
@@ -26,12 +27,26 @@ class SparkContext extends Logging {
   def newRddId() = nextRddId.getAndIncrement()
 
   def parallelize[T](seq:Seq[T],numSlices:Int = 3)={
-
+      new ParallelCollectionRDD[T](this,seq,numSlices)
   }
+
+//  /**
+//   *  对所有的partition进行计算
+//   */
+//  def runJob[T,U](rdd:RDD[T],func:Iterator[T] => U):Array[U]={
+//    runJob(rdd,func,0 until rdd.partitions)
+//  }
+//
+//  def runJob[T,U](rdd:RDD[T],func:Iterator[T]=>U,partitions:Seq[Int]):Array[U]={
+//
+//  }
 }
 
 object SparkContext {
-  def main(args: Array[String]) {
-
+  def main(args: Array[String]): Unit = {
+    val sc = new SparkContext
+    val array:Array[Int] = Array(1,2,3,4,6,7,8,9,10)
+    val a:ParallelCollectionRDD[Int] = sc.parallelize(array,10)
+    a.map(_*2)
   }
 }
