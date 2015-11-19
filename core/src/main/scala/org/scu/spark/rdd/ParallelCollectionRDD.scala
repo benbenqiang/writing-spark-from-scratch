@@ -3,6 +3,7 @@ package org.scu.spark.rdd
 import org.scu.spark.{Partition, SparkContext}
 
 /**
+ * 通过sc.parallelize创建的RDD类型
  * Created by bbq on 2015/11/16
  */
 class ParallelCollectionRDD[T](sc: SparkContext,

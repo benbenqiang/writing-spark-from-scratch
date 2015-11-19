@@ -18,6 +18,8 @@ abstract class RDD[T](
 
   val partitioner : Option[Partitioner] = None
 
+  lazy  val  partitions :Array[Partition] = getPartition
+
   val id: Int = _sc.newRddId()
 
   /**
@@ -25,7 +27,7 @@ abstract class RDD[T](
    */
   def context = _sc
 
-  def this(parent:RDD[_]) = this(parent.context,List(new OneToOneDependency[_](parent[_])))
+  def this(parent:RDD[_]) = this(parent.context,List(new OneToOneDependency(parent)))
 
   /**
    * 最近一个父RDD
