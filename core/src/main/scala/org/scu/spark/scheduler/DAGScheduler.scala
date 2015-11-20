@@ -22,6 +22,7 @@ private[spark] class DAGScheduler(
 
   private val nextJobId = new AtomicInteger(0)
 
+
   /**
    * 提交任务，并返回JobWaiter
    */
@@ -52,8 +53,23 @@ private[spark] class DAGScheduler(
     val start = System.nanoTime()
     val waiter = submitJob(rdd,func,partitions,resultHandler)
     waiter.awaitResult()match {
-      case JobSucceeded=>
-      case JobFailed(e)=>
+      case JobSucceeded=> logInfo(s"Job ${waiter.jobId},took ${System.nanoTime()-start} s")
+      case JobFailed(e)=> logInfo(s"Job ${waiter.jobId},took ${System.nanoTime()-start} s")
     }
   }
+}
+
+private[scheduler] class DAGSchedulerEventProcessLoop(dagScheduler:DAGScheduler) extends EventLoop[DAGSchedulerEvent]("dag-scheduler-event-loop") with Logging{
+
+  override protected def onError(e: Throwable): Unit = {
+
+  }
+
+  override protected def onReceive(event: DAGSchedulerEvent): Unit = {
+
+  }
+
+//  private def doOnReceive(event:DAGSchedulerEvent) = event match{
+//    case JobSubmit(jobId,rdd,func,partitions,listerner) => dagScheduler.
+//  }
 }

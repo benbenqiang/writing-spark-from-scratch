@@ -5,8 +5,15 @@ package org.scu.spark
  */
 object Test {
   def main(args: Array[String]) {
-    val a = Array(1,2,3,4)
-    val b = Seq(1,2,3,4)
-    val c = List(1,2,3)
+//    try{
+//      println("wzq")
+//      throw new Exception("wzqwzq")
+//    }catch{
+//      case e:Exception=>{
+////        val caller = Thread.currentThread().getStackTrace.tail
+////        e.setStackTrace(e.getStackTrace ++ caller)
+//        throw e
+//      }
+//    }
   }
 }

@@ -5,6 +5,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.scu.spark.rdd.{ParallelCollectionRDD, RDD}
 import org.scu.spark.scheduler.DAGScheduler
 
+import scala.reflect.ClassTag
+
 /**
  * 1.spark的主要入口。spark用于连接集群，获取Executor资源。
  * 2.Spark运算流程：
@@ -34,18 +36,18 @@ class SparkContext extends Logging {
   /**
    * 对所有的partition进行计算
    */
-  def runJob[T, U](rdd: RDD[T], func: Iterator[T] => U): Array[U] = {
+  def runJob[T, U:ClassTag](rdd: RDD[T], func: Iterator[T] => U): Array[U] = {
     runJob(rdd, func, rdd.partitions.indices)
   }
 
-  def runJob[T, U](rdd: RDD[T], func: Iterator[T] => U, partitions: Seq[Int]): Array[U] = {
+  def runJob[T, U:ClassTag](rdd: RDD[T], func: Iterator[T] => U, partitions: Seq[Int]): Array[U] = {
     runJob[T,U](rdd, (ctx: TaskContext, it: Iterator[T]) => func(it), partitions)
   }
 
   /**
    * 计算部分Partition，并将每个Partition的结果存入Array
    */
-  def runJob[T, U](rdd: RDD[T], func: (TaskContext, Iterator[T]) => U, partitions: Seq[Int]): Array[U] = {
+  def runJob[T, U:ClassTag](rdd: RDD[T], func: (TaskContext, Iterator[T]) => U, partitions: Seq[Int]): Array[U] = {
     val results = new Array[U](partitions.size)
     runJob[T,U](rdd, func, partitions, (index, res) => results(index) = res)
     results
