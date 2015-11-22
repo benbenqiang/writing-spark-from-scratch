@@ -2,6 +2,8 @@ package org.scu.spark
 
 import org.scu.spark.rdd.RDD
 
+import scala.reflect.ClassTag
+
 /**
  * Created by bbq on 2015/11/16
  */
@@ -22,6 +24,10 @@ abstract class NarrowDependency[T](_rdd:RDD[T]) extends Dependency[T]{
 
 }
 
+class ShuffleDependency[K:ClassTag,V:ClassTag,C:ClassTag](
+                                                         val _rdd:RDD[(_,_)],
+                                                         val partitioner: Partitioner
+                                                           )
 class OneToOneDependency[T](_rdd:RDD[T]) extends NarrowDependency[T](_rdd){
   /**
    * 子partitionID就是父的ID

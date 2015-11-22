@@ -17,8 +17,8 @@ import org.scu.spark.{Logging, SparkContext, TaskContext}
  * Created by bbq on 2015/11/19
  */
 private[spark] class DAGScheduler(
-                  private val sc:SparkContext
-                    ) extends Logging{
+                                   private val sc: SparkContext
+                                   ) extends Logging {
 
   private val nextJobId = new AtomicInteger(0)
 
@@ -26,40 +26,52 @@ private[spark] class DAGScheduler(
   /**
    * 提交任务，并返回JobWaiter
    */
-  def submitJob[T,U](
-                    rdd:RDD[T],
-                    func:(TaskContext,Iterator[T])=>U,
-                    partitions:Seq[Int],
-                    resultHandler:(Int,U)=>Unit
-                      ): JobWaiter[U] ={
+  def submitJob[T, U](
+                       rdd: RDD[T],
+                       func: (TaskContext, Iterator[T]) => U,
+                       partitions: Seq[Int],
+                       resultHandler: (Int, U) => Unit
+                       ): JobWaiter[U] = {
     val jobId = nextJobId.getAndIncrement()
-    if(partitions.isEmpty) {
+    if (partitions.isEmpty) {
       return new JobWaiter[U](this, jobId, 0, resultHandler)
     }
 
-    val waiter = new JobWaiter[U](this,jobId,partitions.size,resultHandler)
+    val waiter = new JobWaiter[U](this, jobId, partitions.size, resultHandler)
 
 
     waiter
   }
+
   /**
    * 计算job，并将结果传给resultHandler
    */
-  def runJob[T,U](
-                   rdd:RDD[T],
-                   func:(TaskContext,Iterator[T])=>U,
-                   partitions:Seq[Int],
-                   resultHandler:(Int,U)=>Unit):Unit={
+  def runJob[T, U](
+                    rdd: RDD[T],
+                    func: (TaskContext, Iterator[T]) => U,
+                    partitions: Seq[Int],
+                    resultHandler: (Int, U) => Unit): Unit = {
     val start = System.nanoTime()
-    val waiter = submitJob(rdd,func,partitions,resultHandler)
-    waiter.awaitResult()match {
-      case JobSucceeded=> logInfo(s"Job ${waiter.jobId},took ${System.nanoTime()-start} s")
-      case JobFailed(e)=> logInfo(s"Job ${waiter.jobId},took ${System.nanoTime()-start} s")
+    val waiter = submitJob(rdd, func, partitions, resultHandler)
+    waiter.awaitResult() match {
+      case JobSucceeded => logInfo(s"Job ${waiter.jobId},took ${System.nanoTime() - start} s")
+      case JobFailed(e) => logInfo(s"Job ${waiter.jobId},took ${System.nanoTime() - start} s")
     }
+  }
+
+  /**
+   * 处理任务提交消息
+   */
+  private[scheduler] def handleJobSubmitted(jobId: Int,
+                                            finalRDD: RDD[_],
+                                            func: (TaskContext, Iterator[_]) => _,
+                                            partitions: Seq[Int],
+                                            listener: JobListerner): Unit = {
+
   }
 }
 
-private[scheduler] class DAGSchedulerEventProcessLoop(dagScheduler:DAGScheduler) extends EventLoop[DAGSchedulerEvent]("dag-scheduler-event-loop") with Logging{
+private[scheduler] class DAGSchedulerEventProcessLoop(dagScheduler: DAGScheduler) extends EventLoop[DAGSchedulerEvent]("dag-scheduler-event-loop") with Logging {
 
   override protected def onError(e: Throwable): Unit = {
 
@@ -69,7 +81,7 @@ private[scheduler] class DAGSchedulerEventProcessLoop(dagScheduler:DAGScheduler)
 
   }
 
-//  private def doOnReceive(event:DAGSchedulerEvent) = event match{
-//    case JobSubmit(jobId,rdd,func,partitions,listerner) => dagScheduler.
-//  }
+  private def doOnReceive(event: DAGSchedulerEvent) = event match {
+    case JobSubmit(jobId, rdd, func, partitions, listerner) => dagScheduler.handleJobSubmitted(jobId, rdd,func,partitions,listerner)
+  }
 }
