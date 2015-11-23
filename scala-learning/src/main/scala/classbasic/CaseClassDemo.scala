@@ -1,3 +1,5 @@
+package classbasic
+
 import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 
 /**
@@ -22,6 +24,5 @@ object CaseClassDemo {
     oos.writeObject(a1)  //Exception in thread "main" java.io.NotSerializableException: A
   }
 }
-
-class A(s:String)
 case class CA(s:String)
+class A(s:String)
