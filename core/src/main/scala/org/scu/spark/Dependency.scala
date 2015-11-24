@@ -25,9 +25,13 @@ abstract class NarrowDependency[T](_rdd:RDD[T]) extends Dependency[T]{
 }
 
 class ShuffleDependency[K:ClassTag,V:ClassTag,C:ClassTag](
-                                                         val _rdd:RDD[(_,_)],
+                                                         val _rdd:RDD[Product2[K,V]],
                                                          val partitioner: Partitioner
-                                                           )
+                                                           )extends Dependency[Product2[K,V]]{
+  val shuffleId:Int = _rdd.context.newShuffleId()
+
+  override def rdd: RDD[Product2[K, V]] = _rdd.asInstanceOf[RDD[Product2[K,V]]]
+}
 class OneToOneDependency[T](_rdd:RDD[T]) extends NarrowDependency[T](_rdd){
   /**
    * 子partitionID就是父的ID

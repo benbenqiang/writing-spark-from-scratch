@@ -16,6 +16,8 @@ abstract class RDD[T](
                    @transient private var _sc:SparkContext,
                    @transient private var deps:Seq[Dependency[_]] ) extends Serializable with Logging{
 
+  private var dependencies_ :Seq[Dependency[_]] = null
+
   val partitioner : Option[Partitioner] = None
 
   lazy  val  partitions :Array[Partition] = getPartition
@@ -29,6 +31,12 @@ abstract class RDD[T](
 
   def this(parent:RDD[_]) = this(parent.context,List(new OneToOneDependency(parent)))
 
+  final def dependencies:Seq[Dependency[_]] ={
+    if(dependencies_ == null){
+      dependencies_ = getDependencies
+    }
+    dependencies_
+  }
   /**
    * 最近一个父RDD
    */
@@ -36,6 +44,10 @@ abstract class RDD[T](
 
   def getPartition:Array[Partition]
 
+  /**由子类实现*/
+  protected def getDependencies: Seq[Dependency[_]] = deps
+
+  def getStorageLevel :StorageLevel =storageLevel
   def compute(split:Partition):Iterator[T]
 
   def iterator(split:Partition):Iterator[T]={
@@ -48,4 +60,5 @@ abstract class RDD[T](
 
 //  def count():Long = sc.runJob
 
+  private var storageLevel : StorageLevel = StorageLevel.NONE
 }

@@ -9,16 +9,27 @@ import org.apache.log4j.Logger
 trait Logging {
   private  val log  : Logger = Logger.getLogger(this.getClass.getName.stripSuffix("$"))
 
+  def logDebug(msg:String)={
+    log.debug(msg)
+  }
+
   def logInfo(msg:String)={
     log.info(msg)
   }
 
-  def logDebug(msg:String)={
-    log.debug(msg)
+  def logWarning(msg:String)={
+    log.warn(msg)
   }
 
   def logError(msg:String)={
     log.error(msg)
   }
 
+  def logFatal(msg:String)={
+    log.fatal()
+  }
+
+  def logWarning(msg:String,throwable: Throwable)={
+    log.fatal(msg,throwable)
+  }
 }

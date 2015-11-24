@@ -18,11 +18,12 @@ class SparkContext extends Logging {
 
   @volatile private var _dagScheduler: DAGScheduler = _
 
-  /**
-   * 下一个RDD的ID
-   */
+  /**下一个RDD的ID */
   val nextRddId = new AtomicInteger(0)
-  def newRddId() = nextRddId.getAndIncrement()
+  private[spark] def newRddId() = nextRddId.getAndIncrement()
+  /**下一个Shuffle的ID */
+  val nextShuffleId = new AtomicInteger(0)
+  private[spark] def newShuffleId() = nextShuffleId.getAndIncrement()
 
   private def dagScheduler :DAGScheduler = _dagScheduler
   private def dagScheduler_= (ds:DAGScheduler):Unit = {

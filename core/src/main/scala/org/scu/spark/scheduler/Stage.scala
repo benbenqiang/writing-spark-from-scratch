@@ -26,5 +26,14 @@ private[scheduler] abstract class Stage(
   /** 一个Stage可以被多个job使用*/
   val jobIds = new mutable.HashSet[Int]
 
+  override def hashCode(): Int = id
 
+  override def equals(obj: scala.Any): Boolean = obj match
+  {
+    case stage :Stage => stage != null && stage.id == id
+    case _ => false
+  }
+
+  /** 返回需要计算的partitionID */
+  def findMissingPartitions():Seq[Int]
 }
