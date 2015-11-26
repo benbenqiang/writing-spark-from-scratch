@@ -21,10 +21,13 @@ private[scheduler] abstract class Stage(
                                        val firstJobId:Int
                                          ) extends Logging{
   /** 最后一个RDD的分区就是整个Stage的分区个数 */
-  val numPartition = rdd.partitions.length
+  val numPartitions = rdd.partitions.length
 
   /** 一个Stage可以被多个job使用*/
   val jobIds = new mutable.HashSet[Int]
+
+  /**挂起的partitonsID*/
+  val pendingPartitons = new mutable.HashSet[Int]
 
   override def hashCode(): Int = id
 

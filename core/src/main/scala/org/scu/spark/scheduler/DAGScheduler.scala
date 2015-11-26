@@ -30,8 +30,12 @@ private[spark] class DAGScheduler(
   private[scheduler] val shuffleIdToMapStage = new mutable.HashMap[Int, ShuffleMapStage]()
   private[scheduler] val jobIdToActiveJob = new mutable.HashMap[Int,ActiveJob]
 
-  private[scheduler] val activeJobs = new mutable.HashSet[ActiveJob]
 
+  private[scheduler] val waitingStages = new mutable.HashSet[Stage]
+  private[scheduler] val runningStages = new mutable.HashSet[Stage]
+  private[scheduler] val failedStages = new mutable.HashSet[Stage]
+
+  private[scheduler] val activeJobs = new mutable.HashSet[ActiveJob]
   /**
    * key是RDD的id，值是每个parition所缓存的地址
    */
@@ -273,7 +277,7 @@ private[spark] class DAGScheduler(
                                             listener: JobListerner): Unit = {
     var finalStage: ResultStage = null
     /**
-     * 调用newResultStage的时候，不仅生成了最后一个Stage，而且还递归的生成了所有Stage
+     * 重要：调用newResultStage的时候，不仅生成了最后一个Stage，而且还递归的生成了所有Stage
      * 所以这里需要捕获异常,通知给JobWaiter任务失败了
      * */
     try {
@@ -301,6 +305,45 @@ private[spark] class DAGScheduler(
   }
 
   private def submitStage(stage:Stage): Unit ={
+    /**提交的stage当前的activejobID*/
+    val jobId = activeJobForStage(stage)
+    if(jobId.isDefined){
+      logDebug("submitStage("+stage+")")
+      if(!waitingStages(stage) && !runningStages(stage) && !failedStages(stage)){
+        /**获取所有没有完成的StageID，并从ID最小的开始运行*/
+        val missing = getMissingParentStages(stage).sortBy(_.id)
+        logDebug("missing:" + missing)
+        /**没有依赖的stage未完成*/
+        if(missing.isEmpty){
+          logInfo(s"Submitting $stage (${stage.rdd}),which has no missing parents")
+
+        }else{
+          for(parent <- missing){
+            submitStage(parent)
+          }
+          waitingStages += stage
+        }
+      }
+    }else{
+      /** TODO : abortStage */
+    }
+  }
+
+  private def activeJobForStage(stage:Stage):Option[Int]={
+    val jobThatUseTage :Array[Int] = stage.jobIds.toArray.sorted
+    jobThatUseTage.find(jobIdToActiveJob.contains)
+  }
+
+  /**
+   * 提交stage的终极方法，只有所有父stage都计算完成才会提交
+   */
+  private def submitMissingTasks(stage:Stage,jobId:Int): Unit ={
+    logDebug(s"submitMissingTasks($stage)")
+
+    stage.pendingPartitons.clear()
+
+    val partitionsToCompute : Seq[Int] = stage.findMissingPartitions()
+
 
   }
 }

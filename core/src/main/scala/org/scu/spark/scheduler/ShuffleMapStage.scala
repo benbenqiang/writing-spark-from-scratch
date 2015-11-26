@@ -15,10 +15,21 @@ class ShuffleMapStage(
                      firstJobId:Int,
                      val shuffleDep: ShuffleDependency[_,_,_]
                        )extends Stage(id,rdd,numTasks,parents,firstJobId){
-  private[this] var _numAvailableOutputs:Int= 0
+  private[this] var numAvailableOutputs_ : Int = 0
 
-  def isAvailable = _numAvailableOutputs == numPartition
+  /**
+   * 每一个List[MapStatus]代表每一个partition的运行状态，之所以是List是因为每一个partition可能
+   * 运行多次
+   */
+  private[this] val outputLocs = Array.fill[List[MapStatus]](numPartitions)(Nil)
+
+  def isAvailable = numAvailableOutputs_ == numPartitions
+
   /** 返回需要计算的partitionID */
   override def findMissingPartitions(): Unit = {
+    val missing = (0 until numPartitions).filter(outputLocs(_).isEmpty)
+    assert(missing.size == numPartitions - numAvailableOutputs_,
+    s"${missing.size} missing,expected ${numPartitions - numAvailableOutputs_}")
+    missing
   }
 }
