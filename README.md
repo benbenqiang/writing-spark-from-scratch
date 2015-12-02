@@ -1,5 +1,8 @@
 # writing-spark-from-scratch
 
+本项目依据spark源码的Master分支，经过阅读研究后，对底层实现产生了浓厚的兴趣，从零开始自己编写实现。
+
+
 ## 目录
 
 * core：     spark核心代码
