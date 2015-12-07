@@ -11,11 +11,12 @@ import scala.ref.WeakReference
  *
  *  StrongReference > SoftReference > WeakReference
  * 参考博客：http://blog.csdn.net/devilkin64/article/details/7916630
+ * http://blog.csdn.net/mxbhxx/article/details/9111711
  * Created by bbq on 2015/12/7
  */
 class WeakReferenceDemo {
   /**
-   * 以弱引用的方式向数组中添加对象，当gc时，会被虚拟机回收
+   * 以弱引用的方式向数组中添加对象，当gc时且没有强引用指向对象，会被虚拟机回收
    */
   def fillHeapWithWeakReference(num:Int)={
     val list = ArrayBuffer[WeakReference[OOMObject]]()

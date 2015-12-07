@@ -1,5 +1,7 @@
 package org.scu.spark.scheduler
 
+import java.util.Properties
+
 import org.scu.spark.TaskContext
 import org.scu.spark.rdd.RDD
 
@@ -14,5 +16,6 @@ private case class JobSubmit(
                             finalRDD:RDD[_],
                             func:(TaskContext,Iterator[_]) => _,
                             partitions:Seq[Int],
-                            listener:JobListerner
+                            listener:JobListerner,
+                            properties:Properties
                               ) extends DAGSchedulerEvent

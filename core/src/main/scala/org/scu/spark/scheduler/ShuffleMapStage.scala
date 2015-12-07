@@ -26,7 +26,7 @@ class ShuffleMapStage(
   def isAvailable = numAvailableOutputs_ == numPartitions
 
   /** 返回需要计算的partitionID */
-  override def findMissingPartitions(): Unit = {
+  override def findMissingPartitions(): Seq[Int] = {
     val missing = (0 until numPartitions).filter(outputLocs(_).isEmpty)
     assert(missing.size == numPartitions - numAvailableOutputs_,
     s"${missing.size} missing,expected ${numPartitions - numAvailableOutputs_}")

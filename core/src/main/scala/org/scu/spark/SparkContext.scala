@@ -1,7 +1,9 @@
 package org.scu.spark
 
+import java.util.Properties
 import java.util.concurrent.atomic.AtomicInteger
 
+import org.apache.commons.lang3.SerializationUtils
 import org.scu.spark.rdd.{ParallelCollectionRDD, RDD}
 import org.scu.spark.scheduler.DAGScheduler
 
@@ -28,6 +30,15 @@ class SparkContext extends Logging {
   private def dagScheduler :DAGScheduler = _dagScheduler
   private def dagScheduler_= (ds:DAGScheduler):Unit = {
     _dagScheduler = ds
+  }
+
+  /**每一个线程都都维护一个本地Properties，并且父进程创建子进程时，会深拷贝一份，防止修改干扰*/
+  protected[spark] val localProperties = new InheritableThreadLocal[Properties]{
+    override def childValue(parentValue: Properties): Properties = {
+      SerializationUtils.clone(parentValue)
+    }
+
+    override def initialValue(): Properties = new Properties()
   }
 
   def parallelize[T](seq: Seq[T], numSlices: Int = 3) = {
@@ -57,8 +68,12 @@ class SparkContext extends Logging {
   /**
    * 这里是所有action的入口，通过resultHandler返回结果
    */
-  def runJob[T, U](rdd: RDD[T], func: (TaskContext, Iterator[T]) => U, partitions: Seq[Int], resultHandler: (Int, U) => Unit): Unit = {
-    dagScheduler.runJob(rdd,func,partitions,resultHandler)
+  def runJob[T, U](
+                    rdd: RDD[T],
+                    func: (TaskContext, Iterator[T]) => U,
+                    partitions: Seq[Int],
+                    resultHandler: (Int, U) => Unit): Unit = {
+    dagScheduler.runJob(rdd,func,partitions,resultHandler,localProperties.get())
   }
 }
 

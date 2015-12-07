@@ -1,6 +1,6 @@
 package org.scu.spark.scheduler
 
-import org.scu.spark.Logging
+import org.scu.spark.{InternalAccumulator, Accumulator, Logging}
 import org.scu.spark.rdd.RDD
 
 import scala.collection.mutable
@@ -20,16 +20,25 @@ private[scheduler] abstract class Stage(
                                        val paraents:List[Stage],
                                        val firstJobId:Int
                                          ) extends Logging{
-  /** 最后一个RDD的分区就是整个Stage的分区个数 */
-  val numPartitions = rdd.partitions.length
-
   /** 一个Stage可以被多个job使用*/
   val jobIds = new mutable.HashSet[Int]
+
+  /** 最后一个RDD的分区就是整个Stage的分区个数 */
+  val numPartitions = rdd.partitions.length
 
   /**挂起的partitonsID*/
   val pendingPartitons = new mutable.HashSet[Int]
 
   override def hashCode(): Int = id
+
+  private var _internalAccumulators : Seq[Accumulator[Long]] = Seq.empty
+
+  /**在本stage中，所有tasks共享的accumulators*/
+  def internalAccumulators : Seq[Accumulator[Long]] = _internalAccumulators
+
+  def resetInternalAccumulators() = {
+    _internalAccumulators = InternalAccumulator.create(rdd.context)
+  }
 
   override def equals(obj: scala.Any): Boolean = obj match
   {

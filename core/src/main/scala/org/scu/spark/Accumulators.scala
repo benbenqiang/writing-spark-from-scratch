@@ -2,6 +2,8 @@ package org.scu.spark
 
 import java.util.concurrent.atomic.AtomicLong
 
+import scala.ref.WeakReference
+
 class Accumulable[R,T] private[spark](
                                      initialValue:R,
                                      param:AccumulableParam[R,T],
@@ -90,25 +92,58 @@ trait AccumulableParam[R,T] extends Serializable{
  */
 class Accumulator[T] private[spark](
                                    @transient private[spark] val initialValue : T,
-                                   parm : AccumulableParam[T,T],
+                                   parm : AccumulatorParam[T],
                                    name:Option[String],
                                    internal:Boolean
                                      )extends Accumulable[T,T](initialValue,parm,name,internal){
   def this(initialValue:T,param:AccumulatorParam[T],name:Option[String])={
-    this(initialValue,parm,name,false)
+    this(initialValue,param,name,false)
   }
 
   def this(initialValue:T,param:AccumulatorParam[T])={
-    this(initialValue,parm,None,false)
+    this(initialValue,param,None,false)
   }
 
 }
 
-object Accumulators {
+object Accumulators extends Logging{
+
+  /**
+   * 之所以采用弱引用是因为，orginals需要维护一个accumulators的所有实例，
+   * 但是如果此处用强引用则会导致内存泄露，所有当RDD使用完某个accumulator并且移除了
+   * 强引用，那么这里便会自动被GC收回
+   */
+  val originals = collection.mutable.Map[Long,WeakReference[Accumulable[_,_]]]()
 
   private val lastId = new AtomicLong(0)
 
   def newId():Long = lastId.getAndIncrement()
+
+  def register(a:Accumulable[_,_]) = synchronized{
+    originals(a.id) = new WeakReference[Accumulable[_, _]](a)
+  }
+
+  def remove(accId:Long): Unit ={
+    synchronized{
+      originals.remove(accId)
+    }
+  }
+
+  /**根据ID，想现有的accumulator添加值*/
+  def add(values:Map[Long,Any])=synchronized{
+    for((id,value) <- values){
+      if(originals.contains(id)){
+        originals(id).get match {
+          case Some(accum) => accum.asInstanceOf[Accumulable[Any,Any]] ++= value
+          case None => throw new IllegalAccessError("Attempted to access garbage collected Accumulator")
+        }
+      }else{
+       logWarning("Ignoring accumulator update for unknown accumulator id" + id)
+      }
+    }
+  }
+
+
 }
 
 /**
@@ -146,4 +181,20 @@ object AccumulatorParam{
   }
 }
 
-//private[spark] object
+private[spark] object InternalAccumulator {
+  val PEAK_EXECUTION_MEMORY = "peakExecutionMemory"
+
+  /**
+   * 用于跟踪内部metrics的accumulators
+   *
+   * 在stage中创建，stage中的所有tasks都使用
+   */
+  def create(sc:SparkContext) : Seq[Accumulator[Long]] ={
+    /**
+     * 在shuffle aggregation join时，为了大概估计这些操作整体所占内存的峰值。
+     */
+    Seq (
+    new Accumulator(0L,AccumulatorParam.LongAccumulatorParam,Some(PEAK_EXECUTION_MEMORY),internal = true)
+    )
+  }
+}
