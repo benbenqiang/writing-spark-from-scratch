@@ -88,13 +88,6 @@ trait AccumulableParam[R,T] extends Serializable{
  *
  * Created by bbq on 2015/11/27
  */
-object Accumulators {
-
-  private val lastId = new AtomicLong(0)
-
-  def newId():Long = lastId.getAndIncrement()
-}
-
 class Accumulator[T] private[spark](
                                    @transient private[spark] val initialValue : T,
                                    parm : AccumulableParam[T,T],
@@ -111,6 +104,13 @@ class Accumulator[T] private[spark](
 
 }
 
+object Accumulators {
+
+  private val lastId = new AtomicLong(0)
+
+  def newId():Long = lastId.getAndIncrement()
+}
+
 /**
  * R和T的类型相同
  * @tparam T 中间结果，部分相加的结果
@@ -121,8 +121,29 @@ trait AccumulatorParam[T] extends AccumulableParam[T,T]{
   }
 }
 
+/**
+ * 隐式参数，默认实现的四种类型
+ */
 object AccumulatorParam{
+  implicit object DoubleAccumulatorParam extends AccumulatorParam[Double]{
+    override def addInPlace(r1: Double, r2: Double): Double = r1 + r2
+    override def zero(initialValue: Double): Double = 0.0
+  }
 
+  implicit object IntAccumulatorParam extends AccumulatorParam[Int] {
+    override def addInPlace(r1: Int, r2: Int): Int = r1 + r2
+    override def zero(initialValue: Int): Int = 0
+  }
+
+  implicit object LongAccumulatorParam extends AccumulatorParam[Long]{
+    override def addInPlace(r1: Long, r2: Long): Long = r1 + r2
+    override def zero(initialValue: Long): Long = 0L
+  }
+
+  implicit object FloatAccumulatorParam extends AccumulatorParam[Float]{
+    override def addInPlace(r1: Float, r2: Float): Float = r1 + r2
+    override def zero(initialValue: Float): Float = 0f
+  }
 }
 
 //private[spark] object
