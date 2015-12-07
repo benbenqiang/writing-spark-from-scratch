@@ -16,7 +16,7 @@ object ContextImplicit extends App{
 
 /**
   * 要求作用域中存在一个类型为M[T]的隐式值。
- *  import Orderd._接受一个隐式的M[T]，并将T转换为Ordered[T]
+ *  import Orderd._接受一个隐式的M[T]，并将T转换为Ordered[T]。
   */
 class Pair[T:Ordering](val first:T,val second:T){
   import Ordered._
