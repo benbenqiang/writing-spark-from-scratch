@@ -8,6 +8,7 @@ import org.scu.spark._
 import org.scu.spark.rdd.RDD
 
 import scala.collection.mutable
+import scala.util.control.NonFatal
 
 /**
  * 1.面向DAG的调度，将任务划分成多个Stage。
@@ -373,11 +374,87 @@ private[spark] class DAGScheduler(
 
     runningStages += stage
 
-    stage match {
-      case s : ShuffleMapStage =>
+    //TODO outputCommitCoordinator
+
+    /**
+     * 根据partition的信息计算每个task的preferedlocation
+     */
+    val taskIdToLocation : Map[Int,Seq[TaskLocation]] = try{
+      stage match {
+        case s : ShuffleMapStage =>
+          partitionsToCompute.map{id => (id,getPreferredLocs(stage.rdd,id))}.toMap
+        case s : ResultStage =>
+          partitionsToCompute.map{id =>
+            val p = s.partitions(id)
+            (id,getPreferredLocs(stage.rdd,p))
+          }.toMap
+      }
+    } catch {
+      /**除了重要的Error如OOM，其他的都不管，会重新尝试stage*/
+      case NonFatal(e)=>
+        //TODO repeat attempt
+        ???
     }
 
+    //TODO send stageInfo to SparkListener
+
+    /**
+     * 将task序列化后广播出去，分发给每个executor，每个executor反序列化
+     * 后得到任务。
+     */
+    //TODO taskBinaryBytes
+
+    /**
+     * 根据stage生成需要计算的tasks
+     */
+    val tasks : Seq[Task[_]] = try{
+      stage match {
+        case stage : ShuffleMapStage=>
+          partitionsToCompute.map{id=>
+            val locs = taskIdToLocation(id)
+            val part = stage.rdd.partitions(id)
+            new ShuffleMapTask(stage.id,
+            //TODO stage lastInfo
+            1,
+            part,
+            locs,
+            stage.internalAccumulators)
+          }
+        case stage: ResultStage =>
+          partitionsToCompute.map { id =>
+            val p = stage.partitions(id)
+            val part = stage.rdd.partitions(p)
+            val locs = taskIdToLocation(id)
+            new ResultTask(stage.id,
+              //TODO stage lastInfo
+              1,
+            part,
+            locs,
+            id,
+            stage.internalAccumulators)
+          }
+      }
+    } catch{
+      case NonFatal(e)=>
+        //TODO abortStage
+        ???
+    }
+
+    /**submit to taskScheduler*/
+    if(tasks.nonEmpty ){
+      logInfo(s"Submitting ${tasks.size} missing tasks form $stage (${stage.rdd})")
+      stage.pendingPartitons ++= tasks.map(_.partitionId)
+
+    }
+
+
+
   }
+
+  def getPreferredLocs(rdd:RDD[_],partition:Int):Seq[TaskLocation]={
+    ???
+  }
+
 }
 
 private[scheduler] class DAGSchedulerEventProcessLoop(dagScheduler: DAGScheduler) extends EventLoop[DAGSchedulerEvent]("dag-scheduler-event-loop") with Logging {

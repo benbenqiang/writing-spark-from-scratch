@@ -12,7 +12,7 @@ private[spark] class ResultTask[T,U](
                                     stageAttemptId:Int,
                                     //TODO taskBinary
                                     partition:Partition,
-                                    locs:Seq[Partition],
+                                    locs:Seq[TaskLocation],
                                     val outputId : Int,
                                     internalAccumulators:Seq[Accumulator[Long]]
                                       ) extends Task[U](stageId,stageAttemptId,partition.index,internalAccumulators) with Serializable{
