@@ -29,6 +29,13 @@ private[scheduler] abstract class Stage(
   /**挂起的partitonsID*/
   val pendingPartitons = new mutable.HashSet[Int]
 
+  private var _nextAttemptId : Int = 0
+
+  /**
+   * 需要在Stage的第一次尝试之前创建StageInfo对象
+   */
+  private var _latestInfo :StageInfo = StageInfo.fromStage(this,_nextAttemptId)
+
   override def hashCode(): Int = id
 
   private var _internalAccumulators : Seq[Accumulator[Long]] = Seq.empty
@@ -36,6 +43,7 @@ private[scheduler] abstract class Stage(
   /**在本stage中，所有tasks共享的accumulators*/
   def internalAccumulators : Seq[Accumulator[Long]] = _internalAccumulators
 
+//  private var _latestInfo :
   def resetInternalAccumulators() = {
     _internalAccumulators = InternalAccumulator.create(rdd.context)
   }
@@ -45,6 +53,9 @@ private[scheduler] abstract class Stage(
     case stage :Stage => stage != null && stage.id == id
     case _ => false
   }
+
+
+  def latestInfo : StageInfo = _latestInfo
 
   /** 返回需要计算的partitionID */
   def findMissingPartitions():Seq[Int]

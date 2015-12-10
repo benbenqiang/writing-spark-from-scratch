@@ -413,25 +413,16 @@ private[spark] class DAGScheduler(
           partitionsToCompute.map{id=>
             val locs = taskIdToLocation(id)
             val part = stage.rdd.partitions(id)
-            new ShuffleMapTask(stage.id,
-            //TODO stage lastInfo
-            1,
-            part,
-            locs,
-            stage.internalAccumulators)
+            new ShuffleMapTask(stage.id, stage.latestInfo.attempteId, part,
+              locs, stage.internalAccumulators)
           }
         case stage: ResultStage =>
           partitionsToCompute.map { id =>
             val p = stage.partitions(id)
             val part = stage.rdd.partitions(p)
             val locs = taskIdToLocation(id)
-            new ResultTask(stage.id,
-              //TODO stage lastInfo
-              1,
-            part,
-            locs,
-            id,
-            stage.internalAccumulators)
+            new ResultTask(stage.id, stage.latestInfo.attempteId, part,
+              locs, id, stage.internalAccumulators)
           }
       }
     } catch{
