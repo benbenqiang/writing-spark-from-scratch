@@ -371,7 +371,7 @@ private[spark] class DAGScheduler(
       stage.resetInternalAccumulators()
     }
 
-    /**任务的属性，调度池，任务组，任务描述等*/
+    /** 任务的属性，调度池，任务组，任务描述等 */
     val properties = jobIdToActiveJob(jobId).properties
 
     runningStages += stage
@@ -381,19 +381,19 @@ private[spark] class DAGScheduler(
     /**
      * 根据partition的信息计算每个task的preferedlocation
      */
-    val taskIdToLocation : Map[Int,Seq[TaskLocation]] = try{
+    val taskIdToLocation: Map[Int, Seq[TaskLocation]] = try {
       stage match {
-        case s : ShuffleMapStage =>
-          partitionsToCompute.map{id => (id,getPreferredLocs(stage.rdd,id))}.toMap
-        case s : ResultStage =>
-          partitionsToCompute.map{id =>
+        case s: ShuffleMapStage =>
+          partitionsToCompute.map { id => (id, getPreferredLocs(stage.rdd, id)) }.toMap
+        case s: ResultStage =>
+          partitionsToCompute.map { id =>
             val p = s.partitions(id)
-            (id,getPreferredLocs(stage.rdd,p))
+            (id, getPreferredLocs(stage.rdd, p))
           }.toMap
       }
     } catch {
-      /**除了重要的Error如OOM，其他的都不管，会重新尝试stage*/
-      case NonFatal(e)=>
+      /** 除了重要的Error如OOM，其他的都不管，会重新尝试stage */
+      case NonFatal(e) =>
         //TODO repeat attempt
         ???
     }
@@ -409,10 +409,10 @@ private[spark] class DAGScheduler(
     /**
      * 根据stage生成需要计算的tasks
      */
-    val tasks : Seq[Task[_]] = try{
+    val tasks: Seq[Task[_]] = try {
       stage match {
-        case stage : ShuffleMapStage=>
-          partitionsToCompute.map{id=>
+        case stage: ShuffleMapStage =>
+          partitionsToCompute.map { id =>
             val locs = taskIdToLocation(id)
             val part = stage.rdd.partitions(id)
             new ShuffleMapTask(stage.id, stage.latestInfo.attempteId, part,
@@ -427,22 +427,23 @@ private[spark] class DAGScheduler(
               locs, id, stage.internalAccumulators)
           }
       }
-    } catch{
-      case NonFatal(e)=>
+    } catch {
+      case NonFatal(e) =>
         //TODO abortStage
         ???
     }
 
-    /**向taskScheduler提交任务*/
-    if(tasks.nonEmpty ){
+    /** 向taskScheduler提交任务 */
+    if (tasks.nonEmpty) {
       logInfo(s"Submitting ${tasks.size} missing tasks form $stage (${stage.rdd})")
       stage.pendingPartitons ++= tasks.map(_.partitionId)
       taskScheduler.submitTasks(new TaskSet(
-      tasks.toArray,stage.id,stage.latestInfo.attempteId,jobId,properties))
+        tasks.toArray, stage.id, stage.latestInfo.attempteId, jobId, properties))
       stage.latestInfo._submissionTime = Some(System.currentTimeMillis())
-    }else{
+    } else {
       //TODO 处理任务运行完毕
     }
+  }
 
   def getPreferredLocs(rdd:RDD[_],partition:Int):Seq[TaskLocation]={
     ???

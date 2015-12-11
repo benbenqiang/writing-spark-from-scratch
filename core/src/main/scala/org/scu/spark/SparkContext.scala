@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.apache.commons.lang3.SerializationUtils
 import org.scu.spark.rdd.{ParallelCollectionRDD, RDD}
-import org.scu.spark.scheduler.DAGScheduler
+import org.scu.spark.scheduler.{TaskSchedulerImpl, TaskScheduler, SchedulerBackend, DAGScheduler}
 
 import scala.reflect.ClassTag
 
@@ -75,9 +75,22 @@ class SparkContext extends Logging {
                     resultHandler: (Int, U) => Unit): Unit = {
     dagScheduler.runJob(rdd,func,partitions,resultHandler,localProperties.get())
   }
+
+
+
 }
 
 object SparkContext {
+
+//  private def createTaskScheduler(sc:SparkContext,master:String):(SchedulerBackend,TaskScheduler)={
+//    val scheduler = new TaskSchedulerImpl(sc)
+//
+//
+//  }
+
+
+  private[spark] val DRIVER_IDENTIFIER = "driver"
+
   def main(args: Array[String]): Unit = {
     val sc = new SparkContext
     val array: Array[Int] = Array(1, 2, 3, 4, 6, 7, 8, 9, 10)

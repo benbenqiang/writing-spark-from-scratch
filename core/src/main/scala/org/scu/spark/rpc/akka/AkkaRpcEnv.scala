@@ -11,7 +11,7 @@ import scala.concurrent.{Await, Future}
 /**
  * Created by bbq on 2015/11/11
  */
-class AkkaRpcEnv(private val actorSystem: ActorSystem) extends Logging {
+class AkkaRpcEnv(private[spark] val actorSystem: ActorSystem) extends Logging {
 
   /**
    * RpcEnv下所包含的actor名称对应Ref表
