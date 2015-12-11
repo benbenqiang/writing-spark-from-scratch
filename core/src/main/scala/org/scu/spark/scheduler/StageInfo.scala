@@ -14,6 +14,9 @@ class StageInfo (
                 val details:String,
                 private[spark] val taskLocalityPreferences :Seq[Seq[TaskLocation]] = Seq.empty
                   ){
+  /**从DAGScheduler向taskscheduler提交的时间*/
+  var _submissionTime : Option[Long] = None
+
 
 }
 

@@ -3,6 +3,7 @@ package org.scu.spark.scheduler
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.remote.FailureDetector.Clock
 import org.apache.commons.lang3.SerializationUtils
 import org.scu.spark._
 import org.scu.spark.rdd.RDD
@@ -22,7 +23,8 @@ import scala.util.control.NonFatal
  * Created by bbq on 2015/11/19
  */
 private[spark] class DAGScheduler(
-                                   private val sc: SparkContext
+                                   private[scheduler] val sc: SparkContext,
+                                   private[scheduler] val taskScheduler:TaskScheduler
                                    ) extends Logging {
 
   private val nextJobId = new AtomicInteger(0)
@@ -431,16 +433,16 @@ private[spark] class DAGScheduler(
         ???
     }
 
-    /**submit to taskScheduler*/
+    /**向taskScheduler提交任务*/
     if(tasks.nonEmpty ){
       logInfo(s"Submitting ${tasks.size} missing tasks form $stage (${stage.rdd})")
       stage.pendingPartitons ++= tasks.map(_.partitionId)
-
+      taskScheduler.submitTasks(new TaskSet(
+      tasks.toArray,stage.id,stage.latestInfo.attempteId,jobId,properties))
+      stage.latestInfo._submissionTime = Some(System.currentTimeMillis())
+    }else{
+      //TODO 处理任务运行完毕
     }
-
-
-
-  }
 
   def getPreferredLocs(rdd:RDD[_],partition:Int):Seq[TaskLocation]={
     ???
