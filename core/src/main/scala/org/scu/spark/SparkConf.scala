@@ -1,5 +1,6 @@
 package org.scu.spark
 
+import scala.collection.JavaConverters._
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -20,8 +21,21 @@ class SparkConf extends Cloneable with Logging{
     this
   }
 
+  def setAll(settings:Traversable[(String,String)]):SparkConf={
+    settings.foreach{case (k,v)=>set(k,v)}
+    this
+  }
+
   def get(key:String):String={
     Option(settings.get(key)).getOrElse(throw new NoSuchElementException(key))
+  }
+
+  def getAll:Array[(String,String)]={
+    settings.entrySet().asScala.map{ent=>(ent.getKey,ent.getValue)}.toArray
+  }
+
+  override def clone : SparkConf ={
+    new SparkConf().setAll(getAll)
   }
 
   def contains(key:String):Boolean = settings.containsKey(key)

@@ -1,6 +1,6 @@
 package org.scu.spark.scheduler.cluster
 
-import org.scu.spark.SparkContext
+import org.scu.spark.{Logging, SparkContext}
 import org.scu.spark.scheduler.TaskSchedulerImpl
 
 /**
@@ -10,7 +10,12 @@ import org.scu.spark.scheduler.TaskSchedulerImpl
 class SparkDeploySchedulerBackend (
                                   scheduler:TaskSchedulerImpl,
                                   sc:SparkContext,
-                                  masters:Array[String]
-                                    ){
+                                  masters:String
+                                    )
+extends CoarseGrainedSchedulerBackend(scheduler,sc.env.rpcEnv)
+//TODO AppClientListener
+with Logging
+{
+
 
 }

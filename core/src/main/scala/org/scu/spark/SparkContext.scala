@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.apache.commons.lang3.SerializationUtils
 import org.scu.spark.rdd.{ParallelCollectionRDD, RDD}
+import org.scu.spark.scheduler.cluster.SparkDeploySchedulerBackend
 import org.scu.spark.scheduler.{TaskSchedulerImpl, TaskScheduler, SchedulerBackend, DAGScheduler}
 
 import scala.reflect.ClassTag
@@ -16,7 +17,15 @@ import scala.reflect.ClassTag
  * TaskSchedulerImpl通过SparkDeploySchedulerBackend的reviveOffers，向ExecutorBackend发送LaunchTask消息，开始在集群中计算
  * Created by bbq on 2015/11/10
  */
-class SparkContext extends Logging {
+class SparkContext(sparkConf : SparkConf) extends Logging {
+
+  private var _conf : SparkConf = _
+  private var _env : SparkEnv = _
+
+  private[spark] def conf : SparkConf = _conf
+
+  def getConf : SparkConf = conf.clone
+  private[spark] def env:SparkEnv = _env
 
   @volatile private var _dagScheduler: DAGScheduler = _
 
@@ -82,17 +91,19 @@ class SparkContext extends Logging {
 
 object SparkContext {
 
-//  private def createTaskScheduler(sc:SparkContext,master:String):(SchedulerBackend,TaskScheduler)={
-//    val scheduler = new TaskSchedulerImpl(sc)
-//
-//
-//  }
+  private def createTaskScheduler(sc:SparkContext,master:String):(SchedulerBackend,TaskScheduler)={
+    val scheduler = new TaskSchedulerImpl(sc)
+    val backend = new SparkDeploySchedulerBackend(scheduler,sc,master)
+
+???
+  }
 
 
   private[spark] val DRIVER_IDENTIFIER = "driver"
 
   def main(args: Array[String]): Unit = {
-    val sc = new SparkContext
+    val conf = new SparkConf()
+    val sc = new SparkContext(conf)
     val array: Array[Int] = Array(1, 2, 3, 4, 6, 7, 8, 9, 10)
     val a: ParallelCollectionRDD[Int] = sc.parallelize(array, 10)
     a.map(_ * 2)
