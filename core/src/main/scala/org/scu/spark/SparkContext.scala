@@ -94,8 +94,8 @@ object SparkContext {
   private def createTaskScheduler(sc:SparkContext,master:String):(SchedulerBackend,TaskScheduler)={
     val scheduler = new TaskSchedulerImpl(sc)
     val backend = new SparkDeploySchedulerBackend(scheduler,sc,master)
-
-???
+    scheduler.initialize(backend)
+    (backend,scheduler)
   }
 
 

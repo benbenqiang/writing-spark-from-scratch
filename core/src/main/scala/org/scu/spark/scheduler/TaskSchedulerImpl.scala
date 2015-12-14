@@ -14,8 +14,15 @@ private[spark] class TaskSchedulerImpl(
                                       val maxTaskFailures:Int,
                                       isLocal:Boolean = false = 4
                                         ) extends TaskScheduler with Logging{
-  def this(sc:SparkContext) = this(sc)
 
+  def this(sc:SparkContext) = this(sc,sc.conf.getInt("spark.task.maxFailures",4))
+
+  var _backend : SchedulerBackend = _
+
+  def initialize(backend:SchedulerBackend) ={
+    _backend = backend
+    //TODO SchedulerBuilder
+  }
   override def start(): Unit = ???
 
   override def applicationAttemptId(): Option[String] = ???
@@ -26,7 +33,13 @@ private[spark] class TaskSchedulerImpl(
 
   override def canelTasks(stageId: Int, interruptThread: Boolean): Unit = ???
 
-  override def submitTasks(taskSet: TaskSet): Unit = ???
+  override def submitTasks(taskSet: TaskSet) = {
+    val tasks = taskSet.tasks
+    logInfo("Adding task set "+taskSet.id + "with" + tasks.length + "tasks")
+    this.synchronized{
+//      val manager = createTaskSet
+    }
+  }
 
   override def executorLost(executorId: String, reason: String): Unit = ???
 
