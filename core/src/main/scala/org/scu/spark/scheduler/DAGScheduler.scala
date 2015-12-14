@@ -27,6 +27,8 @@ private[spark] class DAGScheduler(
                                    private[scheduler] val taskScheduler:TaskScheduler
                                    ) extends Logging {
 
+  def this(sc:SparkContext) = this(sc,sc.taskScheduler)
+
   private val nextJobId = new AtomicInteger(0)
   private val nextStageId = new AtomicInteger(0)
 

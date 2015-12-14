@@ -12,7 +12,7 @@ import org.scu.spark.{Logging, SparkContext}
 private[spark] class TaskSchedulerImpl(
                                       val sc:SparkContext,
                                       val maxTaskFailures:Int,
-                                      isLocal:Boolean = false = 4
+                                      isLocal:Boolean = false
                                         ) extends TaskScheduler with Logging{
 
   def this(sc:SparkContext) = this(sc,sc.conf.getInt("spark.task.maxFailures",4))
@@ -23,7 +23,9 @@ private[spark] class TaskSchedulerImpl(
     _backend = backend
     //TODO SchedulerBuilder
   }
-  override def start(): Unit = ???
+  override def start(): Unit = {
+    _backend.start()
+  }
 
   override def applicationAttemptId(): Option[String] = ???
 

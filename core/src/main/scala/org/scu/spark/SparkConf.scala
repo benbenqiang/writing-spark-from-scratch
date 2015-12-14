@@ -3,6 +3,8 @@ package org.scu.spark
 import scala.collection.JavaConverters._
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.util.hashing.Hashing.Default
+
 /**
  * Created by bbq on 2015/12/11
  */
@@ -11,7 +13,8 @@ class SparkConf extends Cloneable with Logging{
 
   set("spark.dirver.host","172.0.0.1")
   set("spark.driver.post","60001")
-
+  set("spark.master","127.0.0.1")
+  set("spark.app.name","defaultAppName")
 
   def set(key:String,value:String):SparkConf={
     if(key == null || value == null){
@@ -27,7 +30,11 @@ class SparkConf extends Cloneable with Logging{
   }
 
   def get(key:String):String={
-    Option(settings.get(key)).getOrElse(throw new NoSuchElementException(key))
+    getOption(key).getOrElse(throw new NoSuchElementException(key))
+  }
+
+  def get(key:String,defaultValue:String):String={
+    getOption(key).getOrElse(defaultValue)
   }
 
   def getOption(key:String):Option[String]={
@@ -36,6 +43,10 @@ class SparkConf extends Cloneable with Logging{
 
   def getInt(key:String,defaultValue:Int) :Int = {
     getOption(key).map(_.toInt).getOrElse(defaultValue)
+  }
+
+  def getInt(key:String):Int = {
+    getOption(key).map(_.toInt).getOrElse(throw new NoSuchElementException(key))
   }
 
   def getAll:Array[(String,String)]={
