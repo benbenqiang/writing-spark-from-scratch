@@ -15,6 +15,9 @@ import scala.collection.mutable.ArrayBuffer
  */
 private[spark] class CoarseGrainedSchedulerBackend(scheduler:TaskSchedulerImpl,val rpcEnv:AkkaRpcEnv)
 extends SchedulerBackend{
+
+  val conf = scheduler.sc.conf
+
   /** dirver程序的RPC对象*/
   var driverEndPoint : ActorRef = _
 

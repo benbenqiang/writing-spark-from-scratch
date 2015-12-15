@@ -52,7 +52,7 @@ class Worker(
    */
   def tryRegisterMasters() = {
     logInfo("Connecting to master:" + masterRpcAddress)
-    val masterEndpoint = rpcEnv.setupEndpointRef(Master.SYSTEM_NAME, masterRpcAddress.host, masterRpcAddress.port, Master.ACTOR_NAME)
+    val masterEndpoint = rpcEnv.setupEndpointRef(Master.SYSTEM_NAME, masterRpcAddress, Master.ACTOR_NAME)
     registerMaster(masterEndpoint)
   }
 

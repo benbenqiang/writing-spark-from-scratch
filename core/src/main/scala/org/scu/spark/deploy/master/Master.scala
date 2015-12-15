@@ -38,6 +38,8 @@ class Master extends Actor with Logging {
         case None =>
           logError(s"Got heartbeat from unregistered worker $workerId")
       }
+    case RegisterApplication =>
+
   }
 }
 

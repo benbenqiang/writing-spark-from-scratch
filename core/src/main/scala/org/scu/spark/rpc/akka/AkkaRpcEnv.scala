@@ -40,8 +40,8 @@ class AkkaRpcEnv(private[spark] val actorSystem: ActorSystem) extends Logging {
   /**
    * 连接远程Actor对象
    */
-  def setupEndpointRef(systemName: String, host: String, port: Int, actorName: String): ActorRef = {
-    val uri = AkkaUtil.address(systemName, host, port, actorName)
+  def setupEndpointRef(systemName: String, rpcAddress: RpcAddress, actorName: String): ActorRef = {
+    val uri = AkkaUtil.address(systemName, rpcAddress.host, rpcAddress.port, actorName)
     val ref = Await.result(asyncSetupEndpointRefByURI(uri), defaultLookupTimeout)
     logInfo("successful created remote actor ref:" + ref)
     ref

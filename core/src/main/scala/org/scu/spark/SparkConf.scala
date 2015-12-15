@@ -12,8 +12,9 @@ class SparkConf extends Cloneable with Logging{
   private val settings = new ConcurrentHashMap[String,String]()
 
   set("spark.dirver.host","172.0.0.1")
-  set("spark.driver.post","60001")
-  set("spark.master","127.0.0.1")
+  set("spark.driver.port","60001")
+  set("spark.master.host","127.0.0.1")
+  set("spark.master.port","60000")
   set("spark.app.name","defaultAppName")
 
   def set(key:String,value:String):SparkConf={

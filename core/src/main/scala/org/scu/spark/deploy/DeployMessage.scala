@@ -21,4 +21,9 @@ object DeployMessage {
 
   case class Heartbeat(workerId: String) extends DeployMessage
   case object SendHeartbeat
+
+  /**
+   *  AppClient to Master
+   */
+  case class RegisterApplication() extends DeployMessage
 }

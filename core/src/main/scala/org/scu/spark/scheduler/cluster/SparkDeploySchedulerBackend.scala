@@ -1,6 +1,7 @@
 package org.scu.spark.scheduler.cluster
 
 import org.scu.spark.rpc.akka.{RpcAddress, AkkaUtil}
+import org.scu.spark.scheduler.client.{AppClient, AppClientListener}
 import org.scu.spark.{SparkEnv, Logging, SparkContext}
 import org.scu.spark.scheduler.TaskSchedulerImpl
 
@@ -11,12 +12,14 @@ import org.scu.spark.scheduler.TaskSchedulerImpl
 class SparkDeploySchedulerBackend (
                                   scheduler:TaskSchedulerImpl,
                                   sc:SparkContext,
-                                  masters:String
+                                  masters:RpcAddress
                                     )
 extends CoarseGrainedSchedulerBackend(scheduler,sc.env.rpcEnv)
-//TODO AppClientListener
+with AppClientListener
 with Logging
 {
+  private var _client :AppClient= _
+
 
   super.start()
   //TODO launcherBackend
@@ -26,8 +29,23 @@ with Logging
     SparkEnv.driverActorSystemName,sc.conf.get("spark.driver.host"),
     sc.conf.getInt("spark.driver.port"),CoarseGrainedSchedulerBackend.ENDPOINT_NAME)
 
+  _client = new AppClient(sc.env.rpcEnv,masters,this,conf)
+  _client.start()
 
+  override def connected(appId: String): Unit = ???
 
+  /**
+   * disconnection是一个短暂的状态，我们会恢复到一个新的Master上
+   */
+  override def disconnected(): Unit = ???
 
+  override def executorAdded(fullId: String, workerId: String, hostPort: String, cores: Int, memory: Int): Unit = ???
 
+  override def executorRemoved(fullId: String, message: String, exitStatus: Option[Int]): Unit = ???
+
+  /**
+   * 当一个应用发生了不可恢复的错误是调用
+   * @param reason
+   */
+  override def dead(reason: String): Unit = ???
 }

@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.apache.commons.lang3.SerializationUtils
 import org.scu.spark.rdd.{ParallelCollectionRDD, RDD}
+import org.scu.spark.rpc.akka.RpcAddress
 import org.scu.spark.scheduler.cluster.SparkDeploySchedulerBackend
 import org.scu.spark.scheduler.{DAGScheduler, SchedulerBackend, TaskScheduler, TaskSchedulerImpl}
 
@@ -33,7 +34,8 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
   private var _taskScheduler : TaskScheduler = _
 
 
-  def master :String = _conf.get("spark.master")
+  def masterHost :String = _conf.get("spark.master.host")
+  def masterPort :Int = _conf.getInt("spark.master.port")
   def appName : String = _conf.get("spark.app.name")
 
   /** 下一个RDD的ID */
@@ -68,7 +70,7 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
   /**
    * ***重要：系统初始化全部代码：建立DAGScheduler，TaskScheduler等
    */
-  val (sched,ts) = SparkContext.createTaskScheduler(this,master)
+  val (sched,ts) = SparkContext.createTaskScheduler(this,RpcAddress(masterHost,masterPort))
   _schedulerBackend = sched
   _taskScheduler = ts
   _dagScheduler = new DAGScheduler(this)
@@ -121,7 +123,7 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
 object SparkContext {
 
   /** 创建负责任务调度的TaskScheduler及其对应的backend */
-  private def createTaskScheduler(sc: SparkContext, master: String): (SchedulerBackend, TaskScheduler) = {
+  private def createTaskScheduler(sc: SparkContext, master: RpcAddress): (SchedulerBackend, TaskScheduler) = {
     val scheduler = new TaskSchedulerImpl(sc)
     val backend = new SparkDeploySchedulerBackend(scheduler, sc, master)
     scheduler.initialize(backend)
