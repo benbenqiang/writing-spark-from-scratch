@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
  */
 object AtomicReferenceDemo {
   def main(args: Array[String]) {
-    @volatile val p1 = Person(101)
+    val p1 = Person(101)
     val p2 = Person(102)
     val ar = new AtomicReference(p1)
     ar.compareAndSet(p1, p2)
