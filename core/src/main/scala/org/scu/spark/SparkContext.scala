@@ -67,9 +67,20 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
     override def initialValue(): Properties = new Properties()
   }
 
+  private[spark] def createSparkEnv(
+                                   conf:SparkConf
+                                   //TODO isLocal
+                                   //TODO listerBus
+                                     ):SparkEnv={
+    SparkEnv.createDriverEnv(conf,2)
+  }
   /**
    * ***重要：系统初始化全部代码：建立DAGScheduler，TaskScheduler等
    */
+  _conf = sparkConf.clone
+  _env = createSparkEnv(conf)
+  SparkEnv.env = _env
+
   val (sched,ts) = SparkContext.createTaskScheduler(this,RpcAddress(masterHost,masterPort))
   _schedulerBackend = sched
   _taskScheduler = ts

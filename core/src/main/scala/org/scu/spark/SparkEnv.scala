@@ -40,7 +40,7 @@ object SparkEnv extends Logging{
                                     numCores:Int
                                       ): SparkEnv ={
     val hostname = conf.get("spark.driver.host")
-    val port = conf.get("spark.driver.port").toInt
+    val port = conf.getInt("spark.driver.port")
     create(conf,SparkContext.DRIVER_IDENTIFIER,hostname,port,isDriver = true,numCores)
   }
 
@@ -72,7 +72,6 @@ object SparkEnv extends Logging{
     val actorSystem = AkkaUtil.doCreateActorSystem(rpcConfig)
     val rpcEnv = new AkkaRpcEnv(actorSystem)
     val envInstance = new SparkEnv(executorId,rpcEnv)
-
     envInstance
   }
 

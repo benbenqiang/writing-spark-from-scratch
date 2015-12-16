@@ -39,6 +39,7 @@ class Master extends Actor with Logging {
           logError(s"Got heartbeat from unregistered worker $workerId")
       }
     case RegisterApplication =>
+      println("receive register application")
 
   }
 }
@@ -48,7 +49,7 @@ object Master extends Logging {
   val ACTOR_NAME = "Master"
 
   def main(args: Array[String]) {
-    val rpcConfig = new RpcEnvConfig(SYSTEM_NAME, "127.0.0.1", 60005)
+    val rpcConfig = new RpcEnvConfig(SYSTEM_NAME, "127.0.0.1", 60000)
     val rpcEnv = new AkkaRpcEnv(AkkaUtil.doCreateActorSystem(rpcConfig))
     val actorRef = rpcEnv.doCreateActor(Props(classOf[Master]), ACTOR_NAME)
   }

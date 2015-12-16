@@ -76,3 +76,8 @@ private[spark] class AppClient(
 
   }
 }
+object AppClient{
+  def main(args: Array[String]) {
+
+  }
+}
