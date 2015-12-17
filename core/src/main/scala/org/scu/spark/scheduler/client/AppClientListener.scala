@@ -2,6 +2,7 @@ package org.scu.spark.scheduler.client
 
 /**
  * appclient的回掉方法。当与集群通讯时所发上的事件
+ * appclient 向 sparkDeployBackend 发送application注册成功的消息
  * Created by bbq on 2015/12/15
  */
 private[spark] trait AppClientListener {
@@ -14,7 +15,6 @@ private[spark] trait AppClientListener {
 
   /**
    * 当一个应用发生了不可恢复的错误是调用
-   * @param reason
    */
   def dead(reason:String):Unit
 

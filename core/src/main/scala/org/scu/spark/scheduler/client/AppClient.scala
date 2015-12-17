@@ -3,9 +3,9 @@ package org.scu.spark.scheduler.client
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import java.util.concurrent.{Future, ScheduledFuture}
 
-import akka.actor.{Props, ActorRef, Actor}
-import akka.actor.Actor.Receive
-import org.scu.spark.deploy.DeployMessage.RegisterApplication
+import akka.actor.{Actor, ActorRef, Props}
+import org.scu.spark.deploy.ApplicationDescription
+import org.scu.spark.deploy.DeployMessage.{RegisteredApplication, RegisterApplication}
 import org.scu.spark.deploy.master.Master
 import org.scu.spark.rpc.akka.{AkkaRpcEnv, RpcAddress}
 import org.scu.spark.util.ThreadUtils
@@ -18,6 +18,7 @@ import org.scu.spark.{Logging, SparkConf}
 private[spark] class AppClient(
                                 rpcEnv: AkkaRpcEnv,
                                 masterUrls: RpcAddress,
+                                appDescription: ApplicationDescription,
                                 listener: AppClientListener,
                                 conf: SparkConf
                                 ) extends Logging {
@@ -25,12 +26,12 @@ private[spark] class AppClient(
   private val masterRpcAddresses = masterUrls
 
   private val registered = new AtomicBoolean(false)
-
+  private val appId = new AtomicReference[String]
   private val clientEndPoint = new AtomicReference[ActorRef]
 
   private class ClientEndPoint(val rpcEnv: AkkaRpcEnv) extends Actor with Logging {
     /** Master的RPC远程对象 */
-    private var master: Option[Actor] = None
+    private var master: Option[ActorRef] = None
 
     private var alreadyDisconnected = false
     private val alreadDead = new AtomicBoolean(false)
@@ -59,7 +60,7 @@ private[spark] class AppClient(
           }
           logInfo("Connecting to master " + masterRpcAddresses + "...")
           val masterRef = rpcEnv.setupEndpointRef(Master.SYSTEM_NAME, masterRpcAddresses, Master.ACTOR_NAME)
-          masterRef ! RegisterApplication
+          masterRef ! RegisterApplication(appDescription)
         } catch {
           case ie: InterruptedException =>
           //TODO notfatal
@@ -67,20 +68,26 @@ private[spark] class AppClient(
       })
     }
 
-    private def registerWithMaster()={
+    private def registerWithMaster() = {
       registerMasterFutures.set(tryRegisterAllMasters())
     }
 
     override def receive: Receive = {
-      case a =>
+      /**向master注册application成功*/
+      case RegisteredApplication(appId_,masterRef) =>
+        appId.set(appId_)
+        registered.set(true)
+        master = Some(masterRef)
+        listener.connected(appId.get)
     }
   }
 
   def start(): Unit = {
-    clientEndPoint.set(rpcEnv.doCreateActor(Props(new ClientEndPoint(rpcEnv)),"AppClient"))
+    clientEndPoint.set(rpcEnv.doCreateActor(Props(new ClientEndPoint(rpcEnv)), "AppClient"))
   }
 }
-object AppClient{
+
+object AppClient {
   def main(args: Array[String]) {
 
   }

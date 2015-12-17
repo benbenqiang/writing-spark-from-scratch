@@ -25,5 +25,11 @@ object DeployMessage {
   /**
    *  AppClient to Master
    */
-  case class RegisterApplication() extends DeployMessage
+  case class RegisterApplication(description: ApplicationDescription) extends DeployMessage
+
+  /**
+   * Master to Appclient
+   */
+  case class RegisteredApplication(appId:String,master:ActorRef)extends DeployMessage
+
 }
