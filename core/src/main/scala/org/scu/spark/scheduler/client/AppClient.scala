@@ -3,7 +3,7 @@ package org.scu.spark.scheduler.client
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import java.util.concurrent.{Future, ScheduledFuture}
 
-import akka.actor.Actor
+import akka.actor.{Props, ActorRef, Actor}
 import akka.actor.Actor.Receive
 import org.scu.spark.deploy.DeployMessage.RegisterApplication
 import org.scu.spark.deploy.master.Master
@@ -25,6 +25,8 @@ private[spark] class AppClient(
   private val masterRpcAddresses = masterUrls
 
   private val registered = new AtomicBoolean(false)
+
+  private val clientEndPoint = new AtomicReference[ActorRef]
 
   private class ClientEndPoint(val rpcEnv: AkkaRpcEnv) extends Actor with Logging {
     /** Master的RPC远程对象 */
@@ -69,11 +71,13 @@ private[spark] class AppClient(
       registerMasterFutures.set(tryRegisterAllMasters())
     }
 
-    override def receive: Receive = ???
+    override def receive: Receive = {
+      case a =>
+    }
   }
 
   def start(): Unit = {
-
+    clientEndPoint.set(rpcEnv.doCreateActor(Props(new ClientEndPoint(rpcEnv)),"AppClient"))
   }
 }
 object AppClient{
