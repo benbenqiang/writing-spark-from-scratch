@@ -14,6 +14,7 @@ class Qualifier {
   val public_name = "习近平"
   protected val protected_name = "习大大"
   protected[accessmodifiers] val protected_name_2 = "习大大"
+  protected[this] val protected_this_name="pro_this"
   private val private_name = "平平"
   private[this] val private_this_name = "小平平"
 
@@ -26,6 +27,7 @@ class Qualifier {
 class QualifierChild extends Qualifier {
   public_name
   protected_name
+  protected_this_name
   /**private_name 不可访问*/
 }
 
@@ -47,6 +49,7 @@ import accessmodifiers.packageone.Qualifier
 class QualifierChild extends Qualifier {
   public_name
   protected_name
+  protected_this_name
 }
 /**不同包中的其他类可以访问protected[本包名]和public*/
 class Other{

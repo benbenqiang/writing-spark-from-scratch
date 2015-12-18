@@ -11,6 +11,7 @@ import org.scu.spark.rpc.akka.{AkkaRpcEnv, AkkaUtil, RpcAddress, RpcEnvConfig}
 import org.scu.spark.{Logging, SparkConf}
 
 import scala.collection.mutable
+import scala.util.Random
 
 /**
  * spark集群的Master节点，主要职责：
@@ -25,7 +26,9 @@ private[deploy] class Master(
                               ) extends Actor with Logging {
   val workers = new mutable.HashSet[WorkerInfo]()
 
+  /**根据workerid和rpcAddres来定位worker*/
   private val idToWorker = new mutable.HashMap[String, WorkerInfo]
+  private val addressToWorker = new mutable.HashMap[RpcAddress,WorkerInfo]()
 
   private val nextAppNumber = new AtomicInteger(0)
   val createDateFormat = new SimpleDateFormat("yyyyMMddHHmmss")
@@ -37,6 +40,7 @@ private[deploy] class Master(
   override def preStart() = {
     logInfo("Starting Spark Master at" + masterUrl)
     logInfo(s"Running Spark version ${org.scu.spark.SPARK_VERSION}")
+
   }
 
   override def receive: Receive = {
@@ -46,16 +50,23 @@ private[deploy] class Master(
       if(idToWorker.contains(id)){
         sender() ! RegisterWorkerFaild("Duplicate worker ID")
       }else{
-        val workerInfo = new WorkerInfo(id, host, port, cores, memory, sender())
-
+        val worker = new WorkerInfo(id, host, port, cores, memory, sender())
+        if(registerWorker(worker)){
+          //TODO 持久化
+          sender() ! RegisteredWorker()
+          schedule()
+        }else{
+          val workerAddress = worker.workerAddress
+          val warning = "worker registeration failed.Attemped to re-register worker at same address:"+workerAddress
+          logWarning(warning)
+          sender() ! RegisterWorkerFaild(warning)
+        }
       }
-//      idToWorker.put(id, workerInfo)
-      sender() ! RegisteredWorker()
 
     case Heartbeat(workerId) =>
       idToWorker.get(workerId) match {
         case Some(workInfo) =>
-          workInfo.lastHeartbeat = System.currentTimeMillis()
+          workInfo._lastHeartbeat = System.currentTimeMillis()
           logDebug(s"Receiving HeartBeet from $workerId")
         case None =>
           logError(s"Got heartbeat from unregistered worker $workerId")
@@ -87,14 +98,40 @@ private[deploy] class Master(
    */
   private def schedule():Unit={
     //TODO recoverStage judge
-
+    val shuffledWorkers: mutable.HashSet[WorkerInfo] = Random.shuffle(workers)
   }
 
   private def registerWorker(worker:WorkerInfo):Boolean={
+    /**过滤掉同一结点之前已经死了的worker*/
     workers.filter{w=>
-      (w.host == worker.host && w.port == worker.port)
+      (w.host == worker.host && w.port == worker.port) && w._state ==WorkerState.DEAD
+    }.foreach(w=>
+    workers -= w
+    )
+
+    /**检测是否在同一哥host：port启动了两个worker,若旧worker状态不正常则代替*/
+    val workerAddress = worker.workerAddress
+    if (addressToWorker.contains(workerAddress)){
+      val oldWorker = addressToWorker(workerAddress)
+      removeWorker(oldWorker)
+    }else{
+      logInfo("Attempted to re-regeister worker at same address"+workerAddress)
+      return false
     }
-    ???
+    workers += worker
+    idToWorker(worker.id) = worker
+    addressToWorker(workerAddress)=worker
+    true
+  }
+
+  private def removeWorker(worker:WorkerInfo): Unit ={
+    logInfo("Removing worker"+worker.id+"on"+worker.host +":"+worker.port)
+    worker.setState(WorkerState.DEAD)
+    idToWorker -= worker.id
+    addressToWorker -= worker.workerAddress
+    //TODO 向worker对应的appclient发送executor丢失的信息
+    //TODO 向worker中的driver进行移除
+    //TODO 持久化文件中删除worker
   }
 
 }
