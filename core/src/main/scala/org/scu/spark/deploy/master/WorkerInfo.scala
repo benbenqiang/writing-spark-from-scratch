@@ -13,5 +13,8 @@ class WorkerInfo(
                 val memory:Int,
                 val endpoint:ActorRef
                   ){
+
   var lastHeartbeat : Long = _
+
+
 }

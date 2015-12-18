@@ -23,6 +23,7 @@ private[deploy] class Master(
                               address: RpcAddress,
                               val conf: SparkConf
                               ) extends Actor with Logging {
+  val workers = new mutable.HashSet[WorkerInfo]()
 
   private val idToWorker = new mutable.HashMap[String, WorkerInfo]
 
@@ -42,8 +43,13 @@ private[deploy] class Master(
     //收到Worker的注册信息
     case RegisterWorker(id, host, port, cores, memory) =>
       logInfo(s"Registering worker $id with $cores cores, $memory RAM")
-      val workerInfo = new WorkerInfo(id, host, port, cores, memory, sender())
-      idToWorker.put(id, workerInfo)
+      if(idToWorker.contains(id)){
+        sender() ! RegisterWorkerFaild("Duplicate worker ID")
+      }else{
+        val workerInfo = new WorkerInfo(id, host, port, cores, memory, sender())
+
+      }
+//      idToWorker.put(id, workerInfo)
       sender() ! RegisteredWorker()
 
     case Heartbeat(workerId) =>
@@ -60,7 +66,7 @@ private[deploy] class Master(
       logInfo("Registerd app"+description.name+ " with ID "+app.id)
       //TODO PersisteneEngine 用于容灾恢复
       sender() ! RegisteredApplication(app.id,self)
-
+      schedule()
   }
 
   /**根据创建时间，driveer的actorRef，创建application信息*/
@@ -82,6 +88,13 @@ private[deploy] class Master(
   private def schedule():Unit={
     //TODO recoverStage judge
 
+  }
+
+  private def registerWorker(worker:WorkerInfo):Boolean={
+    workers.filter{w=>
+      (w.host == worker.host && w.port == worker.port)
+    }
+    ???
   }
 
 }
