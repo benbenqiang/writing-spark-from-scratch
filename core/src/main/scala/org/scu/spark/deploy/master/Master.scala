@@ -11,6 +11,7 @@ import org.scu.spark.rpc.akka.{AkkaRpcEnv, AkkaUtil, RpcAddress, RpcEnvConfig}
 import org.scu.spark.{Logging, SparkConf}
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 /**
@@ -29,6 +30,16 @@ private[deploy] class Master(
   /**根据workerid和rpcAddres来定位worker*/
   private val idToWorker = new mutable.HashMap[String, WorkerInfo]
   private val addressToWorker = new mutable.HashMap[RpcAddress,WorkerInfo]()
+
+  /**定位App*/
+  val idToApp = new mutable.HashMap[String,ApplicationInfo]()
+  private val endpointToApp = new mutable.HashMap[ActorRef,ApplicationInfo]()
+  private val addressToApp = new mutable.HashMap[RpcAddress,ApplicationInfo]()
+
+  /**维护App状态*/
+  val apps = new mutable.HashSet[ApplicationInfo]()
+  val waitingApps = new ArrayBuffer[ApplicationInfo]()
+  private val completedApps = new ArrayBuffer[ApplicationInfo]()
 
   private val nextAppNumber = new AtomicInteger(0)
   val createDateFormat = new SimpleDateFormat("yyyyMMddHHmmss")
@@ -74,11 +85,26 @@ private[deploy] class Master(
     case RegisterApplication(description) =>
       println("Registering app" + description.name)
       val app = createApplication(description,sender())
+      registerApplication(app)
       logInfo("Registerd app"+description.name+ " with ID "+app.id)
       //TODO PersisteneEngine 用于容灾恢复
       sender() ! RegisteredApplication(app.id,self)
       schedule()
   }
+/**
+   *  调度当前可用的资源。当新添加一个app或者资源变化时调用该方法
+   */
+  private def schedule():Unit={
+    //TODO recoverStage judge
+    val shuffledWorkers: mutable.HashSet[WorkerInfo] = Random.shuffle(workers)
+//    for (worker <- shuffledWorkers if worker._state == WorkerState.ALIVE){
+//
+//    }
+    /**根据application启动worker上的executor*/
+
+  }
+
+  //与Application相关方法
 
   /**根据创建时间，driveer的actorRef，创建application信息*/
   private def createApplication(desc: ApplicationDescription, driver: ActorRef): ApplicationInfo = {
@@ -93,13 +119,21 @@ private[deploy] class Master(
     "app-%s-%04d".format(createDateFormat.format(submitDate),nextAppNumber.getAndIncrement())
   }
 
-  /**
-   *  调度当前可用的资源。当新添加一个app或者资源变化时调用该方法
-   */
-  private def schedule():Unit={
-    //TODO recoverStage judge
-    val shuffledWorkers: mutable.HashSet[WorkerInfo] = Random.shuffle(workers)
+  private def registerApplication(app:ApplicationInfo):Unit={
+    val appAddress = AkkaUtil.getRpcAddress(app.driver)
+    if(addressToApp.contains(appAddress)){
+      logInfo("Attempted to re-register applicaiton at same address:"+appAddress)
+      return
+    }
+    //TODO applicationMetircSystem
+    apps += app
+    idToApp(app.id) = app
+    endpointToApp(app.driver)=app
+    addressToApp(appAddress) = app
+    waitingApps += app
   }
+
+  //与Worker相关方法
 
   private def registerWorker(worker:WorkerInfo):Boolean={
     /**过滤掉同一结点之前已经死了的worker*/
@@ -134,6 +168,17 @@ private[deploy] class Master(
     //TODO 持久化文件中删除worker
   }
 
+  private def startExecutorsOnWorkers():Unit={
+    for(app <- waitingApps if app.coresLeft){
+      val coresPerExecutor : Option[Int] = app.desc.coresPerExecutor
+      //过滤出可以满足executor的worker,根据剩余的cores大小由高到低排列
+      val usableWorkers = workers.toArray.filter(_._state==WorkerState.ALIVE)
+      .filter(worker=>worker.memoryFree >= app.desc.memoryPerExecutorMB &&
+      worker.coresFree >= coresPerExecutor.getOrElse(1)).sortBy(_.coresFree).reverse
+
+
+    }
+  }
 }
 
 object Master extends Logging {

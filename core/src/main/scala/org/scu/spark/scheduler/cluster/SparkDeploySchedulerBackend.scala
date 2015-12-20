@@ -24,6 +24,8 @@ class SparkDeploySchedulerBackend(
 
   private var appId:String = _
 
+  private val maxCores = conf.getOption("spark.cores.max").map(_.toInt)
+
   private val registrationBarrier = new Semaphore(0)
 
   override def start(): Unit = {
@@ -31,10 +33,10 @@ class SparkDeploySchedulerBackend(
     //TODO launcherBackend
 
     /** executor 远程连接Driver 的地址 */
-    val driverUrl = AkkaUtil.address(
+    val driverUrl = AkkaUtil.generateRpcAddress(
       SparkEnv.driverActorSystemName, sc.conf.get("spark.driver.host"),
       sc.conf.getInt("spark.driver.port"), CoarseGrainedSchedulerBackend.ENDPOINT_NAME)
-    val appDesc = ApplicationDescription(sc.appName)
+    val appDesc = ApplicationDescription(sc.appName,maxCores,sc.executorMemory)
     _client = new AppClient(sc.env.rpcEnv, masters,appDesc, this, conf)
     _client.start()
     //TODO setApp state using launcherBackend

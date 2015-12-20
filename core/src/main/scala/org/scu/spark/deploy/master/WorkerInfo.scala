@@ -15,13 +15,19 @@ class WorkerInfo(
                 val endpoint:ActorRef
                   ){
 
-  var _lastHeartbeat : Long = _
+  @transient var coresUsed : Int = _
+  @transient var memoryUsed :Int = _
+
+  @transient var _lastHeartbeat : Long = _
 
   var _state :WorkerState.Value = _
 
   val workerAddress = RpcAddress(host,port)
 
   init()
+
+  def memoryFree : Int = memory - memoryUsed
+  def coresFree :Int = cores - coresUsed
 
   private def init(): Unit ={
     _state = WorkerState.ALIVE

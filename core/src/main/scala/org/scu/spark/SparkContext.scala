@@ -32,6 +32,7 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
   @volatile private var _dagScheduler: DAGScheduler = _
   private var _schedulerBackend : SchedulerBackend = _
   private var _taskScheduler : TaskScheduler = _
+  private var _executorMemoy :Int = _
 
 
   def masterHost :String = _conf.get("spark.master.host")
@@ -74,6 +75,9 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
                                      ):SparkEnv={
     SparkEnv.createDriverEnv(conf,2)
   }
+
+  private[spark] def executorMemory:Int= _executorMemoy
+
   /**
    * ***重要：系统初始化全部代码：建立DAGScheduler，TaskScheduler等
    */
@@ -86,8 +90,9 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
   _taskScheduler = ts
   _dagScheduler = new DAGScheduler(this)
 
-
   _taskScheduler.start()
+
+  _executorMemoy = _conf.getInt("spark.executor.memory")
 
 
   /**
