@@ -135,6 +135,16 @@ private[deploy] class Master(
 
   //与Worker相关方法
 
+  private def launchExecutor(worker:WorkerInfo,exec:ExecutorDesc)={
+    logInfo("Launching executor"+ exec.fullId + "on worker" + worker.id)
+    worker.addExecutor(exec)
+    /**通知worker初始化executor*/
+    worker.endpoint ! LaunchExecutor(masterUrl,exec.application.id,exec.id,exec.application.desc,exec.cores,exec.memory)
+    /**通知Application Driver Executor已经注册好了*/
+    exec.application.driver ! ExecutorAdded(exec.id,worker.id,worker.hostPort,exec.cores,exec.memory)
+  }
+
+  /**接受来自Worker的信息*/
   private def registerWorker(worker:WorkerInfo):Boolean={
     /**过滤掉同一结点之前已经死了的worker*/
     workers.filter{w=>
@@ -176,8 +186,28 @@ private[deploy] class Master(
       .filter(worker=>worker.memoryFree >= app.desc.memoryPerExecutorMB &&
       worker.coresFree >= coresPerExecutor.getOrElse(1)).sortBy(_.coresFree).reverse
 
+      //TODO sheduleExecutorsOnWorkers
+
+      for(pos <- usableWorkers.indices){
+        allocateWorkerResourceToExecutors(app,coresPerExecutor.get,coresPerExecutor,usableWorkers(pos))
+      }
 
     }
+  }
+
+  /**
+    *
+    */
+  private def allocateWorkerResourceToExecutors(
+                                               app:ApplicationInfo,
+                                               assignedCores:Int,
+                                               coresPerExecutor:Option[Int],
+                                               worker:WorkerInfo
+                                                 )={
+    /**每个worker分配一个executor*/
+    val exec = app.addExecutor(worker,assignedCores)
+
+
   }
 }
 

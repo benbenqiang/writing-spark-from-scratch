@@ -10,5 +10,5 @@ private[master] class ExecutorDesc (
                                    val cores:Int,
                                    val memory:Int
                                      ){
-
+  def fullId:String = application.id + "/"+id
 }

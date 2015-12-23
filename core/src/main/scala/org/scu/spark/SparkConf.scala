@@ -16,6 +16,7 @@ class SparkConf extends Cloneable with Logging{
   set("spark.master.host","127.0.0.1")
   set("spark.master.port","60000")
   set("spark.app.name","defaultAppName")
+  set("spark.executor.memory","1024")
 
   def set(key:String,value:String):SparkConf={
     if(key == null || value == null){
