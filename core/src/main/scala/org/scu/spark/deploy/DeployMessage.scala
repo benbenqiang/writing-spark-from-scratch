@@ -1,6 +1,7 @@
 package org.scu.spark.deploy
 
 import akka.actor.ActorRef
+import org.scu.spark.deploy.worker.ExecutorState.ExectutorState
 import org.scu.spark.util.Utils
 /**
  * Master和Woker之间传递的消息
@@ -23,6 +24,13 @@ object DeployMessage {
   case class Heartbeat(workerId: String) extends DeployMessage
   case object SendHeartbeat
 
+  case class ExecutorStateChanged(
+                                 appId:String,
+                                 execId:Int,
+                                 state:ExectutorState,
+                                 message:Option[String],
+                                 exitStatus:Option[Int]
+                                   )extends DeployMessage
   /**
    *  AppClient to Master
    */

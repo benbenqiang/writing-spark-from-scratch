@@ -34,8 +34,8 @@ class SparkDeploySchedulerBackend(
 
     /** executor 远程连接Driver 的地址 */
     val driverUrl = AkkaUtil.generateRpcAddress(
-      SparkEnv.driverActorSystemName, sc.conf.get("spark.driver.host"),
-      sc.conf.getInt("spark.driver.port"), CoarseGrainedSchedulerBackend.ENDPOINT_NAME)
+      SparkEnv.driverActorSystemName, RpcAddress(sc.conf.get("spark.driver.host"),
+      sc.conf.getInt("spark.driver.port")), CoarseGrainedSchedulerBackend.ENDPOINT_NAME)
     val appDesc = ApplicationDescription(sc.appName,maxCores,sc.executorMemory)
     _client = new AppClient(sc.env.rpcEnv, masters,appDesc, this, conf)
     _client.start()

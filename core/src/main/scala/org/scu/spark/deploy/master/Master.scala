@@ -120,7 +120,7 @@ private[deploy] class Master(
   }
 
   private def registerApplication(app:ApplicationInfo):Unit={
-    val appAddress = AkkaUtil.getRpcAddress(app.driver)
+    val appAddress = AkkaUtil.getRpcAddressFromActor(app.driver)
     if(addressToApp.contains(appAddress)){
       logInfo("Attempted to re-register applicaiton at same address:"+appAddress)
       return

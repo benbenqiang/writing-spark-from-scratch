@@ -1,5 +1,6 @@
 package org.scu.spark.deploy.worker
 
+import java.io.{IOException, File}
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.concurrent.{TimeUnit, Executors}
@@ -7,11 +8,13 @@ import java.util.concurrent.{TimeUnit, Executors}
 import akka.actor.{PoisonPill, Actor, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
-import org.scu.spark.Logging
+import org.scu.spark.{SparkConf, Logging}
 import org.scu.spark.deploy.DeployMessage._
 import org.scu.spark.deploy.master.Master
 import org.scu.spark.rpc.akka.{AkkaRpcEnv, AkkaUtil, RpcAddress, RpcEnvConfig}
+import org.scu.spark.util.Utils
 
+import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
@@ -20,9 +23,13 @@ import scala.util.{Failure, Success}
  */
 class Worker(
               rpcEnv: AkkaRpcEnv,
-              masterRpcAddress: RpcAddress,
               cores: Int,
-              memory: Int
+              memory: Int,
+              masterRpcAddress:RpcAddress,
+              systemName:String,
+              endpointName:String,
+              workDirpath : String = null,
+              val conf:SparkConf
               ) extends Actor with Logging {
   //用于生成Woker的ID
   private def createDateFormat = new SimpleDateFormat("yyyyMMddHHmmss")
@@ -30,11 +37,44 @@ class Worker(
   private val host = rpcEnv.address.host
   private val port = rpcEnv.address.port
   private var master: Option[ActorRef] = None
+  private var activeMasterUrl :String = ""
   private val workerId = generateWorkerId()
   private val HEARTBEAT_MILLIS= 30 * 1000
 
+  val workerUri = AkkaUtil.generateRpcAddress(systemName,AkkaUtil.getRpcAddressFromSys(rpcEnv.actorSystem),endpointName)
+  val executors = new mutable.HashMap[String,ExecutorRunner]
+
+  private val sparkHome = new File(".")
+
+  var workerDir :File = null
+  val appDirectories = new mutable.HashMap[String,Seq[String]]
+
+  var coresUsed = 0
+  var memoryUsed = 0
+
+  def coresFree :Int = cores  - coresUsed
+  def memoryFree :Int = memory  - memoryUsed
+
+  private def createWorkDir() = {
+    workerDir = Option(workDirpath).map(new File(_)).getOrElse(new File(sparkHome,"worker"+workerId))
+    try {
+      workerDir.mkdir()
+      if (!workerDir.exists() || !workerDir.isDirectory) {
+        logError("Failed to create work directory" + workerDir)
+        System.exit(1)
+      }
+      assert(workerDir.isDirectory)
+    }catch {
+      case e:Exception =>
+        logError("Failed to create work directiory"+ workerDir)
+        System.exit(1)
+    }
+  }
+
   override def preStart() = {
-    logInfo("Starting Spark worker")
+    logInfo(s"Starting Spark worker $host:$port with $cores cores,$memory RAM")
+    logInfo(s"Running Spark version ${org.scu.spark.SPARK_VERSION}")
+    createWorkDir()
     //向Master注册
     tryRegisterMasters()
   }
@@ -43,6 +83,46 @@ class Worker(
     case SendHeartbeat =>
       logDebug("Send hearbeat to master")
       master.get ! Heartbeat(workerId)
+
+    case LaunchExecutor(masterUrl,appId,execId,appDesc,cores_,memory_) =>
+      if(masterUrl != activeMasterUrl){
+        logWarning(s"Invalid Master ($masterUrl) attempted to launch executor")
+      }else{
+        logInfo(s"Asked to launch executor $appId / $execId for $appId")
+
+        /**为executor创建目录*/
+        val exectutorDir = new File(workerDir,appId +"/" + execId)
+        if (!exectutorDir.mkdir()){
+          throw  new IOException("Failed to create directory"+exectutorDir)
+        }
+
+        //TODO appDirectoreos
+
+        val manager = new ExecutorRunner(
+        appId,
+        execId,
+        appDesc.copy(),
+        cores_,
+        memory_,
+        self,
+        workerId,
+        host,
+        publicAddress = host,
+        sparkHome,
+        exectutorDir,
+        workerUri,
+        conf,
+        ExecutorState.RUNNING
+        )
+        executors(appId+"/"+execId) = manager
+        /**真正启动Executor的地方*/
+        manager.start()
+        coresUsed += cores_
+        memoryUsed += memory_
+        /**先通知Master，再由master通知appclient*/
+        master.get ! ExecutorStateChanged(appId,execId,manager.state,None,None)
+
+      }
     case _ =>
       logError("no receive defined!")
   }
@@ -94,6 +174,7 @@ class Worker(
    * 配置Worker的MasterActorRef
    */
   def changeMaster(masterRef: ActorRef) = {
+    activeMasterUrl = AkkaUtil.getRpcAddressFromActor(masterRef).toSparkURL
     master = Some(masterRef)
   }
 
@@ -115,6 +196,7 @@ object Worker extends Logging {
     val rpcConfig = new RpcEnvConfig(SYSTEM_NAME, "127.0.0.1", 60001)
     val masterRpcAddress = RpcAddress("127.0.0.1", 60000)
     val rpcEnv = new AkkaRpcEnv(AkkaUtil.doCreateActorSystem(rpcConfig))
-    val actorRef = rpcEnv.doCreateActor(Props(classOf[Worker], rpcEnv, masterRpcAddress, 2, 1024), ACTOR_NAME)
+    val conf = new SparkConf()
+    val actorRef = rpcEnv.doCreateActor(Props(classOf[Worker], rpcEnv, 2, 1024, masterRpcAddress, SYSTEM_NAME, ACTOR_NAME, null, conf), ACTOR_NAME)
   }
 }

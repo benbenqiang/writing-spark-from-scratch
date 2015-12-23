@@ -1,6 +1,6 @@
 package org.scu.spark.rpc.akka
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{ExtendedActorSystem, ActorRef, ActorSystem}
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -23,17 +23,22 @@ object AkkaUtil {
   //返回akkaActor的地址
   def generateRpcAddress(
              systemName:String,
-             host:String,
-             port:Int,
+                        rpcAddress: RpcAddress,
              actorName:String
                ):String={
-    s"akka.tcp://$systemName@$host:$port/user/$actorName"
+    s"akka.tcp://$systemName@${rpcAddress.host}:${rpcAddress.port}/user/$actorName"
   }
   
-  def getRpcAddress(actor:ActorRef):RpcAddress={
+  /**通过actorRef获取RPCAddress*/
+  def getRpcAddressFromActor(actor:ActorRef):RpcAddress={
     val akkaAddress = actor.path.address
     RpcAddress(akkaAddress.host.get,akkaAddress.port.get)
   }
 
+  /**通过actorSystem互殴RPCaddress*/
+  def getRpcAddressFromSys(actorSystem: ActorSystem):RpcAddress={
+    val address = actorSystem.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+    RpcAddress(address.host.get,address.port.get)
+  }
 }
 
