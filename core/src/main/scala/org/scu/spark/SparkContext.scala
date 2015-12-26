@@ -9,6 +9,7 @@ import org.scu.spark.rpc.akka.RpcAddress
 import org.scu.spark.scheduler.cluster.SparkDeploySchedulerBackend
 import org.scu.spark.scheduler.{DAGScheduler, SchedulerBackend, TaskScheduler, TaskSchedulerImpl}
 
+import scala.collection.mutable
 import scala.reflect.ClassTag
 
 /**
@@ -34,6 +35,8 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
   private var _taskScheduler : TaskScheduler = _
   private var _executorMemoy :Int = _
 
+  /**传给Env的参数*/
+  private[spark] val executorEnvs = mutable.HashMap[String,String]()
 
   def masterHost :String = _conf.get("spark.master.host")
   def masterPort :Int = _conf.getInt("spark.master.port")

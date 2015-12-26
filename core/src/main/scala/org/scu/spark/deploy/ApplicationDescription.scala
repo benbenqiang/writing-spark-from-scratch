@@ -8,6 +8,7 @@ private[spark] case class ApplicationDescription(
                                                 name:String,
                                                 maxCores:Option[Int],
                                                 memoryPerExecutorMB:Int,
+                                                command:Command,
                                                 coresPerExecutor:Option[Int]=None
                                                 //TODO a lot
                                                   ) {

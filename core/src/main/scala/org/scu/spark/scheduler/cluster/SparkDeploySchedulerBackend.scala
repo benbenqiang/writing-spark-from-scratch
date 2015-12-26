@@ -2,11 +2,12 @@ package org.scu.spark.scheduler.cluster
 
 import java.util.concurrent.Semaphore
 
-import org.scu.spark.deploy.ApplicationDescription
+import org.scu.spark.deploy.{Command, ApplicationDescription}
 import org.scu.spark.rpc.akka.{AkkaUtil, RpcAddress}
 import org.scu.spark.scheduler.TaskSchedulerImpl
 import org.scu.spark.scheduler.client.{AppClient, AppClientListener}
-import org.scu.spark.{Logging, SparkContext, SparkEnv}
+import org.scu.spark.util.Utils
+import org.scu.spark.{SparkConf, Logging, SparkContext, SparkEnv}
 
 /**
  * Spark Standalone 用于分配资源。
@@ -22,7 +23,7 @@ class SparkDeploySchedulerBackend(
   with Logging {
   private var _client: AppClient = _
 
-  private var appId:String = _
+  private var appId: String = _
 
   private val maxCores = conf.getOption("spark.cores.max").map(_.toInt)
 
@@ -35,19 +36,47 @@ class SparkDeploySchedulerBackend(
     /** executor 远程连接Driver 的地址 */
     val driverUrl = AkkaUtil.generateRpcAddress(
       SparkEnv.driverActorSystemName, RpcAddress(sc.conf.get("spark.driver.host"),
-      sc.conf.getInt("spark.driver.port")), CoarseGrainedSchedulerBackend.ENDPOINT_NAME)
-    val appDesc = ApplicationDescription(sc.appName,maxCores,sc.executorMemory)
-    _client = new AppClient(sc.env.rpcEnv, masters,appDesc, this, conf)
+        sc.conf.getInt("spark.driver.port")), CoarseGrainedSchedulerBackend.ENDPOINT_NAME)
+
+    /**传给CoarseGrainedExecutorBackend的参数，最终由ExecutorRunner替换字符串的值{{CORES}}后运行*/
+    val args = Seq(
+      "--driver-url", driverUrl,
+      "--executor-id", "{{EXECUTOR_ID}}",
+      "--hostname", "{{HOSTNAME}}",
+      "--cores", "{{CORES}}",
+      "--app-id", "{{APP_ID}}",
+      "--worker-url", "{{WORKER_URL}}"
+    )
+
+    val extraJavaOpts = sc.conf.getOption("spark.executor.extraJavaOptions")
+    .map(Utils.splitCommandString).getOrElse(Nil)
+    val classPathEntries = sc.conf.getOption("spark.executor.extraClassPath")
+    .map(_.split(java.io.File.pathSeparator).toSeq).getOrElse(Nil)
+    val libraryPathEntries = sc.conf.getOption("spark.executor.extraLibraryPath")
+    .map(_.split(java.io.File.pathSeparator).toSeq).getOrElse(Nil)
+
+    //TODO test class path
+
+    val sparkJavaOpts = Utils.sparkJavaOpts(conf,SparkConf.isExecutorStartupConf)
+    val javaOpts = sparkJavaOpts ++ extraJavaOpts
+    /**通过Process运行进程的指令类*/
+    val command = Command("org.scu.spark.executor.CoarseGrainedExecutorBackend",
+    args,sc.executorEnvs,classPathEntries,libraryPathEntries,javaOpts)
+
+    val coresPerExecutor = conf.getOption("spark.executor.cores").map(_.toInt)
+
+    val appDesc = ApplicationDescription(sc.appName, maxCores, sc.executorMemory,command,coresPerExecutor)
+    _client = new AppClient(sc.env.rpcEnv, masters, appDesc, this, conf)
     _client.start()
     //TODO setApp state using launcherBackend
     waitForRegistration()
   }
 
   /**
-    * appclient 向 master成功注册了应用
-    */
+   * appclient 向 master成功注册了应用
+   */
   override def connected(appId: String): Unit = {
-    logInfo("connected to spark cluster with app Id "+appId)
+    logInfo("connected to spark cluster with app Id " + appId)
     this.appId = appId
     notifyContext()
     //TODO launcherBackend set AppId
@@ -67,13 +96,13 @@ class SparkDeploySchedulerBackend(
    */
   override def dead(reason: String): Unit = ???
 
-  /**当client向Master 注册application信息的时候，使用该方法阻塞等待*/
-  private def waitForRegistration()={
+  /** 当client向Master 注册application信息的时候，使用该方法阻塞等待 */
+  private def waitForRegistration() = {
     registrationBarrier.acquire()
   }
 
-  /**当client成功注册applicaiton后，调用该方法释放阻塞的进程*/
-  private def notifyContext()={
+  /** 当client成功注册applicaiton后，调用该方法释放阻塞的进程 */
+  private def notifyContext() = {
     registrationBarrier.release()
   }
 }

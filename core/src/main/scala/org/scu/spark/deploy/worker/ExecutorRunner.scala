@@ -27,9 +27,34 @@ private[deploy] class ExecutorRunner(
                                     val workerUrl:String,
                                     conf:SparkConf,
                                     //TODO appLocalDirs:Seq[String]
-                                    val state :ExecutorState.Value
+                                    @volatile var state :ExecutorState.Value
                                       ) extends Logging{
-  private[worker] def start(): Unit = {
+  private val fullId = appId + "/" + execId
+  private var workerThread :Thread = null
+  private var process :Process = null
 
+  //TODO FileAppender
+
+  private[worker] def start(): Unit = {
+    workerThread = new Thread("ExecutorRunner for " + fullId){
+      override def run(): Unit = {fetchAndRunExecutor()}
+    }
+  }
+
+  private def fetchAndRunExecutor(): Unit ={
+    try{
+//      val builder =
+    }catch{
+      case interrupted : InterruptedException=>{
+        logInfo("Runner thread for executor "+fullId+"interrupted")
+        state = ExecutorState.KILLED
+        //TODO killProcess
+      }
+      case e:Exception=>{
+        logError("Error running executor"+e)
+        state = ExecutorState.FAILED
+        //TODO killProcess
+      }
+    }
   }
 }
