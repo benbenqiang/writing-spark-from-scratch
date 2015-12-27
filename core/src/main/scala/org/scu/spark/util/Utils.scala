@@ -1,5 +1,6 @@
 package org.scu.spark.util
 
+import org.apache.commons.lang3.SystemUtils
 import org.scu.spark.SparkConf
 
 /**
@@ -22,6 +23,21 @@ object Utils {
     conf.getAll
       .filter{case(k,_) =>filterKey(k)}
     .map{case (k,v) => s"-D$k=$v"}
+  }
+
+  /**判断底层系统*/
+  val isWindows = SystemUtils.IS_OS_WINDOWS
+  val isMac = SystemUtils.IS_OS_MAC
+
+  /**返回当前系统的*/
+  def libraryPathName : String = {
+    if(isWindows){
+      "PATH"
+    } else if(isMac){
+      "DYLD_LIBRARY_PATH"
+    } else {
+      "LD_LIBRARY_PATH"
+    }
   }
 
 

@@ -41,9 +41,21 @@ private[deploy] class ExecutorRunner(
     }
   }
 
+  /**将变量名转换为真实值，因为Appclient在提交的时候并不知道master可以分配
+    * 多少资源，所以就先用字符串代替，在ExecturorRunner中再进行替换*/
+  private[worker] def substituteVariables(arguments:String):String=arguments match {
+    case "{{WORKER_URL}}" => workerUrl
+    case "{{EXECUTOR_ID}}" => execId.toString
+    case "{{HOSTNAME}}" => host
+    case "{{CORES}}" => cores.toString
+    case "{{APP_ID}}" => appId
+    case other => other
+  }
+
   private def fetchAndRunExecutor(): Unit ={
     try{
-//      val builder =
+      val builder = CommandUtils.buildProcessBuilder(appDesc.command,memory,sparkHome.getAbsolutePath,substituteVariables)
+
     }catch{
       case interrupted : InterruptedException=>{
         logInfo("Runner thread for executor "+fullId+"interrupted")
