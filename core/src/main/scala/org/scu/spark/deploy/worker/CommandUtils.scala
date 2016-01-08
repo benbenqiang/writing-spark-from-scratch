@@ -2,8 +2,11 @@ package org.scu.spark.deploy.worker
 
 import java.io.File
 
+import scala.collection.JavaConverters._
+
 import org.scu.spark.Logging
 import org.scu.spark.deploy.Command
+import org.scu.spark.launcher.WorkerCommandBuilder
 import org.scu.spark.util.Utils
 
 /**
@@ -36,8 +39,8 @@ private[deploy] object CommandUtils extends Logging {
 
   /**将command转化为Seq，提供给ProcessBuilder运行*/
   private def buildCommandSeq(command:Command,memory:Int,sparkHome:String):Seq[String]={
-    //TODO command to seq
-    ???
+    val cmd = new WorkerCommandBuilder(sparkHome,memory,command).buildCommand()
+    cmd.asScala ++ Seq(command.mainClass) ++ command.arguments
   }
   /**
    * 根据系统更新Command，以及extra class path

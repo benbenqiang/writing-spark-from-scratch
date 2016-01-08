@@ -55,6 +55,7 @@ private[deploy] class ExecutorRunner(
   /**根据ApplicationDescription*/
   private def fetchAndRunExecutor(): Unit ={
     try{
+      /**以java -cp 的方式运行CoarseGrainedExecutorBackend*/
       val builder = CommandUtils.buildProcessBuilder(appDesc.command,memory,sparkHome.getAbsolutePath,substituteVariables)
 
     }catch{
