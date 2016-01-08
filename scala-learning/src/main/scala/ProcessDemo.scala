@@ -1,3 +1,4 @@
+import scala.collection.JavaConverters._
 /**
  * Process 调用操作系统的指令
  * 两种基本运行方式
@@ -16,11 +17,14 @@ object ProcessDemo {
 
   /**使用进程运行自定义类*/
   def demo3()={
-    val p = new ProcessBuilder("concurrent.FutureDemo")
+    val p = new ProcessBuilder("java","--version")
+    val formatted = p.command().asScala.mkString("\"","\" \"","\"")
+    println(formatted)
     p.start()
   }
   def main(args: Array[String]) {
     demo3()
+    Thread.sleep(10000)
   }
 }
 

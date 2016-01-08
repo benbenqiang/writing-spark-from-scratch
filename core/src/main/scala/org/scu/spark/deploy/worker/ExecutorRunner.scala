@@ -52,21 +52,20 @@ private[deploy] class ExecutorRunner(
     case other => other
   }
 
+  /**根据ApplicationDescription*/
   private def fetchAndRunExecutor(): Unit ={
     try{
       val builder = CommandUtils.buildProcessBuilder(appDesc.command,memory,sparkHome.getAbsolutePath,substituteVariables)
 
     }catch{
-      case interrupted : InterruptedException=>{
+      case interrupted : InterruptedException=>
         logInfo("Runner thread for executor "+fullId+"interrupted")
         state = ExecutorState.KILLED
         //TODO killProcess
-      }
-      case e:Exception=>{
+      case e:Exception=>
         logError("Error running executor"+e)
         state = ExecutorState.FAILED
         //TODO killProcess
-      }
     }
   }
 }
