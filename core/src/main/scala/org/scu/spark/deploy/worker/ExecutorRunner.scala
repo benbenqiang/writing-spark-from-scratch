@@ -2,6 +2,10 @@ package org.scu.spark.deploy.worker
 
 import java.io.File
 
+import org.scu.spark.deploy.DeployMessage.ExecutorStateChanged
+
+import scala.collection.JavaConverters._
+
 import akka.actor.ActorRef
 import org.scu.spark.{Logging, SparkConf}
 import org.scu.spark.deploy.ApplicationDescription
@@ -57,6 +61,21 @@ private[deploy] class ExecutorRunner(
     try{
       /**以java -cp 的方式运行CoarseGrainedExecutorBackend*/
       val builder = CommandUtils.buildProcessBuilder(appDesc.command,memory,sparkHome.getAbsolutePath,substituteVariables)
+      val command = builder.command()
+      val formattedCommand = command.asScala.mkString("\"","\" \"","\"")
+      logInfo(s"Launch command: $formattedCommand")
+
+      builder.directory(executorDir)
+
+      //TODO spark_launch_with_scala
+
+      //TODO Loger
+
+      process = builder.start()
+
+      val exitCode = process.waitFor()
+      state = ExecutorState.EXITED
+      worker ! ExecutorStateChanged(appId,execId,state,Some("exit"),Some(exitCode))
 
     }catch{
       case interrupted : InterruptedException=>
