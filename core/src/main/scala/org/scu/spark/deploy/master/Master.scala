@@ -179,7 +179,7 @@ private[deploy] class Master(
   }
 
   private def startExecutorsOnWorkers():Unit={
-    for(app <- waitingApps if app.coresLeft){
+    for(app <- waitingApps if app.coresLeft > 0){
       val coresPerExecutor : Option[Int] = app.desc.coresPerExecutor
       //过滤出可以满足executor的worker,根据剩余的cores大小由高到低排列
       val usableWorkers = workers.toArray.filter(_._state==WorkerState.ALIVE)
