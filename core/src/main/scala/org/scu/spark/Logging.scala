@@ -29,6 +29,10 @@ trait Logging {
     log.fatal()
   }
 
+  def logError(msg:String,throwable: Throwable)={
+    log.error(msg,throwable)
+  }
+
   def logWarning(msg:String,throwable: Throwable)={
     log.fatal(msg,throwable)
   }

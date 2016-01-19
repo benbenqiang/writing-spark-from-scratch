@@ -13,6 +13,7 @@ import org.scu.spark.util.ThreadUtils
 import org.scu.spark.{Logging, SparkEnv}
 
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 /**
  * Created by bbq on 2016/1/13
@@ -32,11 +33,17 @@ private[spark] class CoarseGrainedExecutorBackend(
 
   override def preStart(): Unit = {
     logInfo("Connecting to driver:"+ driverUrl)
+    /**future执行环境*/
+    implicit val context = ThreadUtils.sameThread
     rpcEnv.asyncSetupEndpointRefByURI(driverUrl).flatMap{ ref => {
       driver = Some(ref)
-      val a= (ref ? RegisterExecutor(executorId,self,hostPort,cores,extractLogUrls)).mapTo[RegisterExecutorResponse]
-      a
-    }}
+      (ref ? RegisterExecutor(executorId,self,hostPort,cores,extractLogUrls)).mapTo[RegisterExecutorResponse]
+    }}.onComplete{
+      case success:Success[RegisterExecutorResponse]=> self ! success.get
+      case Failure(e) =>
+        logError(s"Cannot register with driver: $driverUrl",e)
+        System.exit(1)
+    }
   }
 
   def extractLogUrls:Map[String,String] = {

@@ -2,12 +2,19 @@ package org.scu.spark.util
 
 import java.util.concurrent._
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.google.common.util.concurrent.{MoreExecutors, ThreadFactoryBuilder}
+
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
 /**
  * Created by bbq on 2015/12/15
  */
 object ThreadUtils {
+
+  /**创建一个ExecutorService，这是一个直接提交的ExecutorService，每次一submit线程其实就是调用的run方法，而不是用Thread运行
+    * 具体查看Java ExecutorService API文档
+    * */
+  private val sameThreadExecutionContext = ExecutionContext.fromExecutorService(MoreExecutors.newDirectExecutorService())
 
   /**
    *  threadFactory:给线程添加前缀
@@ -56,4 +63,8 @@ object ThreadUtils {
     executor.setRemoveOnCancelPolicy(true)
     executor
   }
+
+
+  def sameThread : ExecutionContextExecutor = sameThreadExecutionContext
+
 }
