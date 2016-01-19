@@ -6,6 +6,8 @@ import java.util.concurrent.{TimeUnit, Executors, Executor}
  * 1.减少创建和销毁线程的次数，每个线程可以重复使用。
  * 2.可以控制线程的个数，以及排队策略
  *
+ * 线程池运行原理：1.新线程添加首先查看corePollSize大小，未满则直接创建，若满则添加进队列
+ *               2.若队列添加失败（到达容量）则直接创建线程，若当前线程大小小于maxPollsize创建成功，等于则失败
  * 配置线程池比较复杂，JavaDoc中建议使用Executors中的常用的一些静态工厂，生成线程池
  * 相关学习网站；http://www.oschina.net/question/565065_86540
  * Created by bbq on 2015/11/13
@@ -69,10 +71,10 @@ object ThreadPoolDemo {
   def main(args: Array[String]): Unit = {
     //创建十个线程
     val threads :Array[Thread]= Array.fill[Thread](10)(new Thread(new MyThread()))
-    SingleThreadDemo(threads)
-    fixedThreadDemo(threads)
+//    SingleThreadDemo(threads)
+//    fixedThreadDemo(threads)
     cachedThreadDemo(threads)
-    scheduledThreadDemo(threads)
+//    scheduledThreadDemo(threads)
 
   }
 }
