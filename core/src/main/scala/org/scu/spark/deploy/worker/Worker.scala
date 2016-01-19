@@ -8,11 +8,12 @@ import java.util.concurrent.{TimeUnit, Executors}
 import akka.actor.{PoisonPill, Actor, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
+import com.google.protobuf.RpcUtil
 import org.scu.spark.{SparkConf, Logging}
 import org.scu.spark.deploy.DeployMessage._
 import org.scu.spark.deploy.master.Master
 import org.scu.spark.rpc.akka.{AkkaRpcEnv, AkkaUtil, RpcAddress, RpcEnvConfig}
-import org.scu.spark.util.Utils
+import org.scu.spark.util.{RpcUtils, Utils}
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -141,7 +142,7 @@ class Worker(
    */
   def registerMaster(master: ActorRef) = {
     import scala.concurrent.ExecutionContext.Implicits.global
-    implicit val timeout = Timeout(5 seconds)
+    implicit val timeout = RpcUtils.askRpcTimeout(conf)
     val future = master ? RegisterWorker(workerId, host, port, cores, memory)
     //异步回调
     future.onComplete{

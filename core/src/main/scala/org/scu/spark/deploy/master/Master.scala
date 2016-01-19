@@ -97,11 +97,8 @@ private[deploy] class Master(
   private def schedule():Unit={
     //TODO recoverStage judge
     val shuffledWorkers: mutable.HashSet[WorkerInfo] = Random.shuffle(workers)
-//    for (worker <- shuffledWorkers if worker._state == WorkerState.ALIVE){
-//
-//    }
     /**根据application启动worker上的executor*/
-
+    startExecutorsOnWorkers()
   }
 
   //与Application相关方法
@@ -204,10 +201,14 @@ private[deploy] class Master(
                                                coresPerExecutor:Option[Int],
                                                worker:WorkerInfo
                                                  )={
-    /**每个worker分配一个executor*/
-    val exec = app.addExecutor(worker,assignedCores)
-
-
+    /**在此worker上启动几个executor*/
+    val numExecutors = coresPerExecutor.map( assignedCores / _).getOrElse(1)
+    val coresToAssign = coresPerExecutor.getOrElse(assignedCores)
+    for(i<- 1 to numExecutors){
+      val exec = app.addExecutor(worker,assignedCores)
+      launchExecutor(worker,exec)
+      app.state = ApplicationState.RUNNING
+    }
   }
 }
 

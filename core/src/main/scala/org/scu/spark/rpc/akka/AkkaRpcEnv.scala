@@ -4,6 +4,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import akka.actor.{ExtendedActorSystem, ActorRef, ActorSystem, Props}
 import org.scu.spark.Logging
+import org.scu.spark.util.RpcUtils
 
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, Future}

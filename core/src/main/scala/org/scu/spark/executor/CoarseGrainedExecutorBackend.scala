@@ -5,15 +5,17 @@ import java.nio.ByteBuffer
 
 import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
+import akka.util.Timeout
 import org.scu.spark.deploy.TaskState.TaskState
 import org.scu.spark.rpc.akka.AkkaRpcEnv
 import org.scu.spark.scheduler.cluster.CoarseGrainedClusterMessage
 import org.scu.spark.scheduler.cluster.CoarseGrainedClusterMessage.{RegisterExecutorResponse, RegisterExecutor, KillTask}
-import org.scu.spark.util.ThreadUtils
+import org.scu.spark.util.{RpcUtils, ThreadUtils}
 import org.scu.spark.{Logging, SparkEnv}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
+import scala.concurrent.duration._
 
 /**
  * Created by bbq on 2016/1/13
@@ -37,6 +39,7 @@ private[spark] class CoarseGrainedExecutorBackend(
     implicit val context = ThreadUtils.sameThread
     rpcEnv.asyncSetupEndpointRefByURI(driverUrl).flatMap{ ref => {
       driver = Some(ref)
+      implicit val timeout = Timeout(100 seconds)
       (ref ? RegisterExecutor(executorId,self,hostPort,cores,extractLogUrls)).mapTo[RegisterExecutorResponse]
     }}.onComplete{
       case success:Success[RegisterExecutorResponse]=> self ! success.get
