@@ -152,12 +152,14 @@ private[deploy] class Master(
 
     /**检测是否在同一哥host：port启动了两个worker,若旧worker状态不正常则代替*/
     val workerAddress = worker.workerAddress
-    if (addressToWorker.contains(workerAddress)){
+    if (addressToWorker.contains(workerAddress)) {
       val oldWorker = addressToWorker(workerAddress)
-      removeWorker(oldWorker)
-    }else{
-      logInfo("Attempted to re-regeister worker at same address"+workerAddress)
-      return false
+      if (oldWorker._state == WorkerState.UNKNOWN)
+        removeWorker(oldWorker)
+      else {
+        logWarning("Attempted to re-regeister worker at same address" + workerAddress)
+        return false
+      }
     }
     workers += worker
     idToWorker(worker.id) = worker
