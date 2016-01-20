@@ -87,7 +87,9 @@ class SparkDeploySchedulerBackend(
    */
   override def disconnected(): Unit = ???
 
-  override def executorAdded(fullId: String, workerId: String, hostPort: String, cores: Int, memory: Int): Unit = ???
+  override def executorAdded(fullId: String, workerId: String, hostPort: String, cores: Int, memory: Int): Unit = {
+    logInfo(s"Granted executor ID $fullId on hostPort $hostPort with $cores cores, $memory memory")
+  }
 
   override def executorRemoved(fullId: String, message: String, exitStatus: Option[Int]): Unit = ???
 

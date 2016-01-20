@@ -83,7 +83,7 @@ private[deploy] class Master(
           logError(s"Got heartbeat from unregistered worker $workerId")
       }
     case RegisterApplication(description) =>
-      println("Registering app" + description.name)
+      logDebug("Registering app" + description.name)
       val app = createApplication(description,sender())
       registerApplication(app)
       logInfo("Registerd app"+description.name+ " with ID "+app.id)
@@ -133,7 +133,7 @@ private[deploy] class Master(
   //与Worker相关方法
 
   private def launchExecutor(worker:WorkerInfo,exec:ExecutorDesc)={
-    logInfo("Launching executor "+ exec.fullId + "on worker" + worker.id)
+    logInfo("Launching executor "+ exec.fullId + " on worker" + worker.id)
     worker.addExecutor(exec)
     /**通知worker初始化executor*/
     worker.endpoint ! LaunchExecutor(masterUrl,exec.application.id,exec.id,exec.application.desc,exec.cores,exec.memory)

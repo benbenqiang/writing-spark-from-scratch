@@ -5,7 +5,7 @@ import java.util.concurrent.{Future, ScheduledFuture}
 
 import akka.actor.{Actor, ActorRef, Props}
 import org.scu.spark.deploy.ApplicationDescription
-import org.scu.spark.deploy.DeployMessage.{RegisteredApplication, RegisterApplication}
+import org.scu.spark.deploy.DeployMessage.{ExecutorAdded, RegisteredApplication, RegisterApplication}
 import org.scu.spark.deploy.master.Master
 import org.scu.spark.rpc.akka.{AkkaRpcEnv, RpcAddress}
 import org.scu.spark.util.ThreadUtils
@@ -79,6 +79,11 @@ private[spark] class AppClient(
         registered.set(true)
         master = Some(masterRef)
         listener.connected(appId.get)
+
+      case ExecutorAdded(id,workerId,hostPort,cores,memory) =>
+        val fullId = appId + "/" + id
+        logInfo(s"Executor added: $fullId on $workerId ($hostPort) with cores:$cores memory:$memory")
+        listener.executorAdded(fullId,workerId,hostPort,cores,memory)
     }
   }
 

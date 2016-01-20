@@ -158,5 +158,6 @@ object SparkContext {
     val array: Array[Int] = Array(1, 2, 3, 4, 6, 7, 8, 9, 10)
     val a: ParallelCollectionRDD[Int] = sc.parallelize(array, 10)
     a.map(_ * 2)
+    Thread.sleep(1000000)
   }
 }
