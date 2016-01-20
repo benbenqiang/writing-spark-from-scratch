@@ -87,7 +87,7 @@ private[deploy] class ExecutorRunner(
         state = ExecutorState.KILLED
         //TODO killProcess
       case e:Exception=>
-        logError("Error running executor"+e)
+        logError("Error running executor : \n"+e.fillInStackTrace() +"\n"+e.getStackTrace.mkString("\n"))
         state = ExecutorState.FAILED
         //TODO killProcess
     }

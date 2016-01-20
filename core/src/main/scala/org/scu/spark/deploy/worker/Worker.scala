@@ -92,7 +92,7 @@ class Worker(
         logInfo(s"Asked to launch executor $appId / $execId for $appId")
 
         /**为executor创建目录*/
-        val exectutorDir = new File(workerDir,appId + File.pathSeparator + execId)
+        val exectutorDir = new File(workerDir,appId +"-" + execId)
         if (!exectutorDir.mkdir()){
           throw  new IOException("Failed to create directory"+exectutorDir)
         }
