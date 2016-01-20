@@ -43,6 +43,9 @@ private[deploy] class ExecutorRunner(
     workerThread = new Thread("ExecutorRunner for " + fullId){
       override def run(): Unit = {fetchAndRunExecutor()}
     }
+    workerThread.start()
+
+    //TODO ShutDownHook
   }
 
   /**将变量名转换为真实值，因为Appclient在提交的时候并不知道master可以分配
@@ -59,6 +62,7 @@ private[deploy] class ExecutorRunner(
   /**根据ApplicationDescription*/
   private def fetchAndRunExecutor(): Unit ={
     try{
+      logDebug("try to run Executor with ProcessBuilder")
       /**以java -cp 的方式运行CoarseGrainedExecutorBackend*/
       val builder = CommandUtils.buildProcessBuilder(appDesc.command,memory,sparkHome.getAbsolutePath,substituteVariables)
       val command = builder.command()

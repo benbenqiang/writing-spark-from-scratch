@@ -92,7 +92,7 @@ class Worker(
         logInfo(s"Asked to launch executor $appId / $execId for $appId")
 
         /**为executor创建目录*/
-        val exectutorDir = new File(workerDir,appId +"/" + execId)
+        val exectutorDir = new File(workerDir,appId + File.pathSeparator + execId)
         if (!exectutorDir.mkdir()){
           throw  new IOException("Failed to create directory"+exectutorDir)
         }
@@ -143,7 +143,7 @@ class Worker(
   def registerMaster(master: ActorRef) = {
     import scala.concurrent.ExecutionContext.Implicits.global
     implicit val timeout = RpcUtils.askRpcTimeout(conf)
-    val future = master ? RegisterWorker(workerId, host, port, cores, memory)
+    val future = master ? RegisterWorker(workerId, host, port, cores, memory,self)
     //异步回调
     future.onComplete{
       case Success(response)=>

@@ -14,7 +14,7 @@ object DeployMessage {
   /**
    * Work向Master注册时所需要用到的消息
    */
-  case class RegisterWorker(id:String,host:String,port:Int,cores:Int,memory:Int)
+  case class RegisterWorker(id:String,host:String,port:Int,cores:Int,memory:Int,actorRef: ActorRef)
 
   sealed trait RegisterWorkerResponse
   case class RegisteredWorker() extends RegisterWorkerResponse with DeployMessage

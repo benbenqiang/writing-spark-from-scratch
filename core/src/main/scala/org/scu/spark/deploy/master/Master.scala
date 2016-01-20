@@ -56,12 +56,12 @@ private[deploy] class Master(
 
   override def receive: Receive = {
     //收到Worker的注册信息
-    case RegisterWorker(id, host, port, cores, memory) =>
+    case RegisterWorker(id, host, port, cores, memory,ref) =>
       logInfo(s"Registering worker $id with $cores cores, $memory RAM")
       if(idToWorker.contains(id)){
         sender() ! RegisterWorkerFaild("Duplicate worker ID")
       }else{
-        val worker = new WorkerInfo(id, host, port, cores, memory, sender())
+        val worker = new WorkerInfo(id, host, port, cores, memory, ref)
         if(registerWorker(worker)){
           //TODO 持久化
           sender() ! RegisteredWorker()
