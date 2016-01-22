@@ -169,11 +169,12 @@ public abstract class AbstractCommandBuilder {
     //
     // For the user code case, we fall back to looking for the Spark assembly under SPARK_HOME.
     // That duplicates some of the code in the shell scripts that look for the assembly, though.
-    String assembly = getenv(ENV_SPARK_ASSEMBLY);
-    if (assembly == null && !isTesting) {
-      assembly = findAssembly();
-    }
-    addToClassPath(cp, assembly);
+
+//    String assembly = getenv(ENV_SPARK_ASSEMBLY);
+//    if (assembly == null && !isTesting) {
+//      assembly = findAssembly();
+//    }
+//    addToClassPath(cp, assembly);
 
     // Datanucleus jars must be included on the classpath. Datanucleus jars do not work if only
     // included in the uber jar as plugin.xml metadata is lost. Both sbt and maven will populate
