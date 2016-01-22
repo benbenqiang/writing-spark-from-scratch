@@ -182,12 +182,12 @@ public abstract class AbstractCommandBuilder {
     if (new File(sparkHome, "RELEASE").isFile()) {
       libdir = new File(sparkHome, "lib");
     } else {
-      libdir = new File(sparkHome, "lib_managed/jars");
+      libdir = new File(sparkHome, "out/artifacts/core_jar");
     }
 
     if (libdir.isDirectory()) {
       for (File jar : libdir.listFiles()) {
-        if (jar.getName().startsWith("datanucleus-")) {
+        if (jar.getName().startsWith("core")) {
           addToClassPath(cp, jar.getAbsolutePath());
         }
       }

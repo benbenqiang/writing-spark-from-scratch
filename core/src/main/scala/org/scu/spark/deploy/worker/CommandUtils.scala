@@ -51,14 +51,14 @@ private[deploy] object CommandUtils extends Logging {
                                  classPath: Seq[String] = Nil,
                                  env: Map[String, String]
                                  ): Command = {
-    /** 环境变量的名称 */
+    /** 环境变量的名称，windows是path */
     val libraryPathName = Utils.libraryPathName
-    /** 启动ExecutorJVM的参数 */
+    /** 所需要的lib目录 */
     val libraryPathEntries = command.libraryPathEntries
-    /**相应系统的cmd环境变量*/
+    /**Executor环境变量,从sparkContext传入，配置文件中通过：spark.executorEnv.[EnvironmentVariableName] 传入*/
     val cmdLibraryPath = command.environment.get(libraryPathName)
 
-    /**加入相应系统的环境变量*/
+    /**整合ClassPath，包含从系统env中获取path变量*/
     val newEnvironment = if (libraryPathEntries.nonEmpty && libraryPathName.nonEmpty) {
       val libraryPaths = libraryPathEntries ++ cmdLibraryPath ++ env.get(libraryPathName)
       command.environment + ((libraryPathName,libraryPaths.mkString(File.pathSeparator)))

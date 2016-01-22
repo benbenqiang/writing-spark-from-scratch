@@ -50,6 +50,7 @@ class SparkDeploySchedulerBackend(
 
     val extraJavaOpts = sc.conf.getOption("spark.executor.extraJavaOptions")
     .map(Utils.splitCommandString).getOrElse(Nil)
+    /**为了与旧版本spark兼容，不推荐使用*/
     val classPathEntries = sc.conf.getOption("spark.executor.extraClassPath")
     .map(_.split(java.io.File.pathSeparator).toSeq).getOrElse(Nil)
     val libraryPathEntries = sc.conf.getOption("spark.executor.extraLibraryPath")

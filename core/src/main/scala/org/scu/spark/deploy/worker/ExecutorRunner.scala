@@ -63,7 +63,9 @@ private[deploy] class ExecutorRunner(
   private def fetchAndRunExecutor(): Unit ={
     try{
       logDebug("try to run Executor with ProcessBuilder")
-      /**以java -cp 的方式运行CoarseGrainedExecutorBackend*/
+      /**以java -cp 的方式运行CoarseGrainedExecutorBackend
+        * 完善环境变量，从sys.env中获取系统PATH变量
+        * */
       val builder = CommandUtils.buildProcessBuilder(appDesc.command,memory,sparkHome.getAbsolutePath,substituteVariables)
       val command = builder.command()
       val formattedCommand = command.asScala.mkString("\"","\" \"","\"")
