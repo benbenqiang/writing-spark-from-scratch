@@ -1,12 +1,12 @@
 package org.scu.spark.util
 
 import org.apache.commons.lang3.SystemUtils
-import org.scu.spark.SparkConf
+import org.scu.spark.{Logging, SparkConf}
 
 /**
  * Created by bbq on 2015/12/23
  */
-object Utils {
+private[spark] object Utils extends Logging{
   def checkHostPort(hostPort:String,message:String=""): Unit ={
     assert(hostPort.indexOf(":") != -1,message)
   }
