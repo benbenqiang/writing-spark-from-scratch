@@ -2,14 +2,17 @@ package org.scu.spark.deploy.worker
 
 import java.io.File
 
+import com.google.common.io.Files
+import com.google.common.base.Charsets.UTF_8
+
 import org.scu.spark.deploy.DeployMessage.ExecutorStateChanged
+import org.scu.spark.util.logging.FileAppender
 
 import scala.collection.JavaConverters._
 
 import akka.actor.ActorRef
 import org.scu.spark.{Logging, SparkConf}
 import org.scu.spark.deploy.ApplicationDescription
-import org.scu.spark.rpc.akka.AkkaRpcEnv
 
 /**
  * 对executor进程进行管理
@@ -36,8 +39,8 @@ private[deploy] class ExecutorRunner(
   private val fullId = appId + "/" + execId
   private var workerThread :Thread = null
   private var process :Process = null
-
-  //TODO FileAppender
+  private var stdoutApperder : FileAppender = null
+  private var stderrAppedner : FileAppender = null
 
   private[worker] def start(): Unit = {
     workerThread = new Thread("ExecutorRunner for " + fullId){
@@ -78,6 +81,15 @@ private[deploy] class ExecutorRunner(
       //TODO Loger
 
       process = builder.start()
+
+      val header = "Spark Execuotr Command :%s \n %s\n\n".format(formattedCommand,"=" * 40)
+
+      val stdout = new File(executorDir,"stdout")
+      stdoutApperder = FileAppender(process.getInputStream,stdout,conf)
+
+      val stderr = new File(executorDir,"stderr")
+      Files.write(header,stderr, UTF_8)
+      stderrAppedner = FileAppender(process.getErrorStream,stderr,conf)
 
       val exitCode = process.waitFor()
       state = ExecutorState.EXITED
