@@ -88,6 +88,8 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
   _env = createSparkEnv(conf)
   SparkEnv.env = _env
 
+  _executorMemoy = _conf.getInt("spark.executor.memory")
+
   val (sched,ts) = SparkContext.createTaskScheduler(this,RpcAddress(masterHost,masterPort))
   _schedulerBackend = sched
   _taskScheduler = ts
@@ -95,7 +97,6 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
 
   _taskScheduler.start()
 
-  _executorMemoy = _conf.getInt("spark.executor.memory")
 
 
   /**
