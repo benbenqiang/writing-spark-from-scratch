@@ -8,12 +8,11 @@ import akka.pattern.ask
 import akka.util.Timeout
 import org.scu.spark.deploy.TaskState.TaskState
 import org.scu.spark.rpc.akka.AkkaRpcEnv
-import org.scu.spark.scheduler.cluster.CoarseGrainedClusterMessage
 import org.scu.spark.scheduler.cluster.CoarseGrainedClusterMessage.{RegisterExecutorResponse, RegisterExecutor, KillTask}
 import org.scu.spark.util.{RpcUtils, ThreadUtils}
 import org.scu.spark.{Logging, SparkEnv}
 
-import scala.concurrent.Future
+import scala.collection.mutable
 import scala.util.{Failure, Success}
 import scala.concurrent.duration._
 
@@ -58,4 +57,21 @@ private[spark] class CoarseGrainedExecutorBackend(
   override def receive: Receive = ???
 
   override def startsUpdate(taskId: Long, state: TaskState, data: ByteBuffer): Unit = ???
+}
+
+private[spark] object CoarseGrainedExecutorBackend extends Logging{
+  def main(args: Array[String]): Unit = {
+
+    val argv = args.mkString(",").split("--").tail.map(_.split(",")).map(x=>(x(0),x(1))).toMap
+
+    val driverUrl :String= argv.getOrElse("driver-url",null)
+    val executorId : String = argv.getOrElse("executor-id",null)
+    val hostname :String = argv.getOrElse("hostname",null)
+    val cores : Int = argv.getOrElse("cores","0").toInt
+    val appId :String = argv.getOrElse("app-id",null)
+    val workerUrl :Option[String] = argv.get("worker-url")
+    val userClassPath = new mutable.ListBuffer[URL]()
+
+
+  }
 }
