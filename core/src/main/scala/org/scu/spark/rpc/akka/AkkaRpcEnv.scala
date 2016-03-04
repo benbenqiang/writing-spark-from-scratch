@@ -4,10 +4,11 @@ import java.util.concurrent.ConcurrentHashMap
 
 import akka.actor.{ExtendedActorSystem, ActorRef, ActorSystem, Props}
 import org.scu.spark.Logging
-import org.scu.spark.util.RpcUtils
+import akka.pattern.ask
 
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, Future}
+import scala.reflect.ClassTag
 
 /**
  * Created by bbq on 2015/11/11
@@ -49,10 +50,21 @@ class AkkaRpcEnv(private[spark] val actorSystem: ActorSystem) extends Logging {
   }
 
   /**
+   * 同步连接远程Actor by url
+   */
+  def setupEndpointRefByURI(uri:String):ActorRef={
+    Await.result(asyncSetupEndpointRefByURI(uri),defaultLookupTimeout)
+  }
+  /**
    * 异步请求远程actor
    */
   def asyncSetupEndpointRefByURI(uri: String): Future[ActorRef] = {
     actorSystem.actorSelection(uri).resolveOne(defaultLookupTimeout)
   }
+
+  def ask[T:ClassTag](actroRef:ActorRef,message:Any):T = {
+   Await.result(actroRef.ask(message),defaultLookupTimeout).asInstanceOf[T]
+  }
+
 }
 
