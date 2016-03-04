@@ -53,17 +53,23 @@ class AkkaRpcEnv(private[spark] val actorSystem: ActorSystem) extends Logging {
    * 同步连接远程Actor by url
    */
   def setupEndpointRefByURI(uri:String):ActorRef={
-    Await.result(asyncSetupEndpointRefByURI(uri),defaultLookupTimeout)
+    val ref = Await.result(asyncSetupEndpointRefByURI(uri),defaultLookupTimeout)
+    logInfo("successful created remote actor ref:" + ref)
+    ref
   }
   /**
    * 异步请求远程actor
    */
   def asyncSetupEndpointRefByURI(uri: String): Future[ActorRef] = {
-    actorSystem.actorSelection(uri).resolveOne(defaultLookupTimeout)
+    val ref = actorSystem.actorSelection(uri).resolveOne(defaultLookupTimeout)
+    logInfo("successful created remote actor ref:" + ref)
+    ref
   }
 
   def ask[T:ClassTag](actroRef:ActorRef,message:Any):T = {
-   Await.result(actroRef.ask(message),defaultLookupTimeout).asInstanceOf[T]
+    val ref = Await.result(actroRef.ask(message),defaultLookupTimeout).asInstanceOf[T]
+    logInfo("successful created remote actor ref:" + ref)
+    ref
   }
 
 }

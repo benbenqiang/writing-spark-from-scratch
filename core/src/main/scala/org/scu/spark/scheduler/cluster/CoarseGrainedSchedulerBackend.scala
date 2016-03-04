@@ -3,6 +3,7 @@ package org.scu.spark.scheduler.cluster
 import akka.actor.{Actor, ActorRef, Props}
 import org.scu.spark.Logging
 import org.scu.spark.rpc.akka.AkkaRpcEnv
+import org.scu.spark.scheduler.cluster.CoarseGrainedClusterMessage.RetrieveSparkProps
 import org.scu.spark.scheduler.{SchedulerBackend, TaskSchedulerImpl}
 
 import scala.collection.mutable.ArrayBuffer
@@ -46,6 +47,7 @@ private[spark] object CoarseGrainedSchedulerBackend {
 
 private class DriverEndPoint(val rpcEnv: AkkaRpcEnv, sparkProperties: ArrayBuffer[(String, String)]) extends Actor with Logging {
   override def receive: Receive = {
-    case a =>
+    case RetrieveSparkProps =>
+      sender() ! sparkProperties
   }
 }

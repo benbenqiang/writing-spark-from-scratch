@@ -3,7 +3,7 @@ package org.scu.spark.executor
 import java.net.URL
 import java.nio.ByteBuffer
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{Props, Actor, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
 import org.scu.spark.deploy.TaskState.TaskState
@@ -42,7 +42,9 @@ private[spark] class CoarseGrainedExecutorBackend(
       implicit val timeout = Timeout(100 seconds)
       (ref ? RegisterExecutor(executorId,self,hostPort,cores,extractLogUrls)).mapTo[RegisterExecutorResponse]
     }}.onComplete{
-      case success:Success[RegisterExecutorResponse]=> self ! success.get
+      case success:Success[RegisterExecutorResponse]=>
+        logInfo("ExecutorBackend connected to DriverBackend")
+        self ! success.get
       case Failure(e) =>
         logError(s"Cannot register with driver: $driverUrl",e)
         System.exit(1)
@@ -72,15 +74,26 @@ private[spark] object CoarseGrainedExecutorBackend extends Logging{
                  userClassPath:Seq[URL]
                    ): Unit ={
     /**从driver获取sparkconf的配置*/
-    val executorConf = new SparkConf
+    val executorConf = new SparkConf()
     /**executor rpc端口*/
     val port = executorConf.getInt("spark.executor.port",0)
     /**fethcer的RPCEnv*/
     val rpcConfig = new RpcEnvConfig("driverPropsFethcer",hostname,port)
     val fetcher = new AkkaRpcEnv(AkkaUtil.doCreateActorSystem(rpcConfig))
     val driver: ActorRef = fetcher.setupEndpointRefByURI(driverUrl)
-    fetcher.ask[Seq[(String,String)]](driver,RetrieveSparkProps) ++ Seq(("spark.app.id",appId))
+    val props = fetcher.ask[Seq[(String,String)]](driver,RetrieveSparkProps) ++ Seq(("spark.app.id",appId))
     fetcher.actorSystem.shutdown()
+
+    val driverConf = new SparkConf()
+    for((key,value) <- props){
+      driverConf.set(key,value)
+    }
+
+    val env = SparkEnv.createExecutorEnv(driverConf,executorId,hostname,port,cores)
+
+    env.rpcEnv.doCreateActor(Props(classOf[CoarseGrainedExecutorBackend],env.rpcEnv,driverUrl,executorId,cores,userClassPath,env),"Executor")
+
+    env.rpcEnv.actorSystem.awaitTermination()
   }
   def main(args: Array[String]): Unit = {
 
@@ -94,6 +107,6 @@ private[spark] object CoarseGrainedExecutorBackend extends Logging{
     val workerUrl :Option[String] = argv.get("worker-url")
     val userClassPath = new mutable.ListBuffer[URL]()
 
-
+    run(driverUrl,executorId,hostname,cores,appId,workerUrl,userClassPath)
   }
 }
