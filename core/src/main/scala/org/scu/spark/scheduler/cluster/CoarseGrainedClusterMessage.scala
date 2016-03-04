@@ -36,5 +36,5 @@ private[spark] object CoarseGrainedClusterMessage {
 
   case class StatusUpdate(executorId: String, taskId: Long, state: TaskState, data: ByteBuffer) extends CoarseGrainedClusterMessage
 
-
+  case object RetrieveSparkProps extends CoarseGrainedClusterMessage
 }

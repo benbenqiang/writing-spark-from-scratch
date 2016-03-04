@@ -7,12 +7,13 @@ import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
 import org.scu.spark.deploy.TaskState.TaskState
-import org.scu.spark.rpc.akka.AkkaRpcEnv
-import org.scu.spark.scheduler.cluster.CoarseGrainedClusterMessage.{RegisterExecutorResponse, RegisterExecutor, KillTask}
+import org.scu.spark.rpc.akka.{AkkaUtil, RpcEnvConfig, AkkaRpcEnv}
+import org.scu.spark.scheduler.cluster.CoarseGrainedClusterMessage.{RetrieveSparkProps, RegisterExecutorResponse, RegisterExecutor, KillTask}
 import org.scu.spark.util.{RpcUtils, ThreadUtils}
-import org.scu.spark.{Logging, SparkEnv}
+import org.scu.spark.{SparkConf, Logging, SparkEnv}
 
 import scala.collection.mutable
+import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 import scala.concurrent.duration._
 
@@ -60,6 +61,27 @@ private[spark] class CoarseGrainedExecutorBackend(
 }
 
 private[spark] object CoarseGrainedExecutorBackend extends Logging{
+
+  private def run(
+                 driverUrl:String,
+                 executorId:String,
+                 hostname:String,
+                 cores:Int,
+                 appId:String,
+                 workerUrl:Option[String],
+                 userClassPath:Seq[URL]
+                   ): Unit ={
+    /**从driver获取sparkconf的配置*/
+    val executorConf = new SparkConf
+    /**executor rpc端口*/
+    val port = executorConf.getInt("spark.executor.port",0)
+    /**fethcer的RPCEnv*/
+    val rpcConfig = new RpcEnvConfig("driverPropsFethcer",hostname,port)
+    val fetcher = new AkkaRpcEnv(AkkaUtil.doCreateActorSystem(rpcConfig))
+    val driver: ActorRef = fetcher.setupEndpointRefByURI(driverUrl)
+    fetcher.ask[Seq[(String,String)]](driver,RetrieveSparkProps) ++ Seq(("spark.app.id",appId))
+    fetcher.actorSystem.shutdown()
+  }
   def main(args: Array[String]): Unit = {
 
     val argv = args.mkString(",").split("--").tail.map(_.split(",")).map(x=>(x(0),x(1))).toMap
