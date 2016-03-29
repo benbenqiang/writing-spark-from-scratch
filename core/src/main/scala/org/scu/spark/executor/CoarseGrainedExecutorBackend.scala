@@ -81,8 +81,10 @@ private[spark] object CoarseGrainedExecutorBackend extends Logging{
     val rpcConfig = new RpcEnvConfig("driverPropsFethcer",hostname,port)
     val fetcher = new AkkaRpcEnv(AkkaUtil.doCreateActorSystem(rpcConfig))
     val driver: ActorRef = fetcher.setupEndpointRefByURI(driverUrl)
-    val props = fetcher.ask[Seq[(String,String)]](driver,RetrieveSparkProps) ++ Seq(("spark.app.id",appId))
+    val props = fetcher.askSyn[Seq[(String,String)]](driver,RetrieveSparkProps,executorConf) ++ Seq(("spark.app.id",appId))
     fetcher.actorSystem.shutdown()
+
+    logInfo("finishConfFething")
 
     val driverConf = new SparkConf()
     for((key,value) <- props){
@@ -107,6 +109,7 @@ private[spark] object CoarseGrainedExecutorBackend extends Logging{
     val workerUrl :Option[String] = argv.get("worker-url")
     val userClassPath = new mutable.ListBuffer[URL]()
 
+    logInfo("Start Runing")
     run(driverUrl,executorId,hostname,cores,appId,workerUrl,userClassPath)
   }
 }

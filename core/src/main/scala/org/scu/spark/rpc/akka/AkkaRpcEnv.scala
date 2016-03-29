@@ -3,8 +3,9 @@ package org.scu.spark.rpc.akka
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.actor.{ExtendedActorSystem, ActorRef, ActorSystem, Props}
-import org.scu.spark.Logging
+import org.scu.spark.{SparkConf, Logging}
 import akka.pattern.ask
+import org.scu.spark.util.RpcUtils
 
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, Future}
@@ -66,7 +67,8 @@ class AkkaRpcEnv(private[spark] val actorSystem: ActorSystem) extends Logging {
     ref
   }
 
-  def ask[T:ClassTag](actroRef:ActorRef,message:Any):T = {
+  def askSyn[T:ClassTag](actroRef:ActorRef,message:Any,conf:SparkConf):T = {
+    implicit val timeout = RpcUtils.askRpcTimeout(conf)
     val ref = Await.result(actroRef.ask(message),defaultLookupTimeout).asInstanceOf[T]
     logInfo("successful created remote actor ref:" + ref)
     ref
