@@ -154,6 +154,7 @@ object SparkContext {
   private[spark] val DRIVER_IDENTIFIER = "driver"
 
   def main(args: Array[String]): Unit = {
+    println(System.getProperty("java.io.tmpdir"))
     val conf = new SparkConf()
     val sc = new SparkContext(conf)
     val array: Array[Int] = Array(1, 2, 3, 4, 6, 7, 8, 9, 10)

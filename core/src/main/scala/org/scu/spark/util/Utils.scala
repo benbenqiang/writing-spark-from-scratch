@@ -1,5 +1,8 @@
 package org.scu.spark.util
 
+import java.io.File
+import java.util.UUID
+
 import org.apache.commons.lang3.SystemUtils
 import org.scu.spark.{Logging, SparkConf}
 
@@ -40,6 +43,21 @@ private[spark] object Utils extends Logging{
     }
   }
 
+  /**递归的创建目录*/
+  def createDirectory(root:String,namePrefix:String = "spark"):File={
+    var dir = new File( root,namePrefix + "-" + UUID.randomUUID().toString )
+    if (dir.exists() || !dir.mkdirs())
+      dir = null
+    dir.getCanonicalFile
+  }
+
+  def createTempDir(
+                   root:String=System.getProperty("java.io.tmpdir"),
+                   namePrefix:String="spark"):File={
+    val dir = createDirectory(root,namePrefix)
+    //TODO JVM down后自动删除文件
+    dir
+  }
 
 
 }
