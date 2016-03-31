@@ -38,6 +38,7 @@ private[spark] class FileAppender(inputStream:InputStream,file:File,bufferSize:I
       var n = 0
       while(!markedForStop && n != -1){
         n = inputStream.read(buf)
+        logDebug("buf:"+buf.take(n+10).mkString(",")+" n: "+ n)
         if (n > 0){
           appendToFile(buf,n)
         }
