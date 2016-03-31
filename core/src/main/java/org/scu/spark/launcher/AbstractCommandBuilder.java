@@ -183,7 +183,7 @@ public abstract class AbstractCommandBuilder {
     if (new File(sparkHome, "RELEASE").isFile()) {
       libdir = new File(sparkHome, "lib");
     } else {
-      libdir = new File(sparkHome, "out/artifacts/core_jar");
+      libdir = new File(sparkHome, "core/target");
     }
 
     if (libdir.isDirectory()) {
