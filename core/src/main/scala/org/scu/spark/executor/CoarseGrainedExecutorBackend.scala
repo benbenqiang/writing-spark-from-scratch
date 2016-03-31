@@ -40,7 +40,7 @@ private[spark] class CoarseGrainedExecutorBackend(
     rpcEnv.asyncSetupEndpointRefByURI(driverUrl).flatMap{ ref => {
       driver = Some(ref)
       implicit val timeout = Timeout(100 seconds)
-      (ref ? RegisterExecutor(executorId,self,hostPort,cores,extractLogUrls)).mapTo[RegisterExecutorResponse]
+      (ref ? RegisterExecutor(executorId,self,cores,extractLogUrls)).mapTo[RegisterExecutorResponse]
     }}.onComplete{
       case success:Success[RegisterExecutorResponse]=>
         logInfo("ExecutorBackend connected to DriverBackend")
@@ -57,7 +57,9 @@ private[spark] class CoarseGrainedExecutorBackend(
     .map(e=> (e._1.substring(prefix.length).toLowerCase,e._2))
   }
 
-  override def receive: Receive = ???
+  override def receive: Receive = {
+    case _ => logInfo("receive something")
+  }
 
   override def startsUpdate(taskId: Long, state: TaskState, data: ByteBuffer): Unit = ???
 }
@@ -77,6 +79,7 @@ private[spark] object CoarseGrainedExecutorBackend extends Logging{
     val executorConf = new SparkConf()
     /**executor rpc端口*/
     val port = executorConf.getInt("spark.executor.port",0)
+    assert(port.toInt != 0)
     /**fethcer的RPCEnv*/
     val rpcConfig = new RpcEnvConfig("driverPropsFethcer",hostname,port)
     val fetcher = new AkkaRpcEnv(AkkaUtil.doCreateActorSystem(rpcConfig))
@@ -93,7 +96,8 @@ private[spark] object CoarseGrainedExecutorBackend extends Logging{
 
     val env = SparkEnv.createExecutorEnv(driverConf,executorId,hostname,port,cores)
 
-    env.rpcEnv.doCreateActor(Props(classOf[CoarseGrainedExecutorBackend],env.rpcEnv,driverUrl,executorId,cores,userClassPath,env),"Executor")
+    val sparkHostPort = hostname + ":" + port
+    env.rpcEnv.doCreateActor(Props(classOf[CoarseGrainedExecutorBackend],env.rpcEnv,driverUrl,executorId,sparkHostPort,cores,userClassPath,env),"Executor")
 
     env.rpcEnv.actorSystem.awaitTermination()
   }
@@ -101,12 +105,12 @@ private[spark] object CoarseGrainedExecutorBackend extends Logging{
 
     val argv = args.mkString(",").split("--").tail.map(_.split(",")).map(x=>(x(0),x(1))).toMap
 
-    val driverUrl :String= argv.getOrElse("driver-url",null)
-    val executorId : String = argv.getOrElse("executor-id",null)
-    val hostname :String = argv.getOrElse("hostname",null)
-    val cores : Int = argv.getOrElse("cores","0").toInt
-    val appId :String = argv.getOrElse("app-id",null)
-    val workerUrl :Option[String] = argv.get("worker-url")
+    val driverUrl :String= argv.getOrElse("driver-url","akka.tcp://sparkDriver@127.0.0.1:60010/user/CoraseGrainedScheduler")
+    val executorId : String = argv.getOrElse("executor-id","0")
+    val hostname :String = argv.getOrElse("hostname","127.0.0.1")
+    val cores : Int = argv.getOrElse("cores","2").toInt
+    val appId :String = argv.getOrElse("app-id","app-test-id")
+    val workerUrl :Option[String] = Some(argv.getOrElse("worker-url","akka.tcp://sparkWorker@127.0.0.1:60002/user/Worker"))
     val userClassPath = new mutable.ListBuffer[URL]()
 
     logInfo("Start Runing")
