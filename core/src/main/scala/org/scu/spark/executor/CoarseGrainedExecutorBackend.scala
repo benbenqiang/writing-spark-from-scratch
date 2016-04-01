@@ -8,7 +8,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import org.scu.spark.deploy.TaskState.TaskState
 import org.scu.spark.rpc.akka.{AkkaUtil, RpcEnvConfig, AkkaRpcEnv}
-import org.scu.spark.scheduler.cluster.CoarseGrainedClusterMessage.{RetrieveSparkProps, RegisterExecutorResponse, RegisterExecutor, KillTask}
+import org.scu.spark.scheduler.cluster.CoarseGrainedClusterMessage._
 import org.scu.spark.util.{RpcUtils, ThreadUtils}
 import org.scu.spark.{SparkConf, Logging, SparkEnv}
 
@@ -58,6 +58,10 @@ private[spark] class CoarseGrainedExecutorBackend(
   }
 
   override def receive: Receive = {
+    case RegisteredExectutor(hostname)=>
+      logInfo("Successfully registered with driver")
+      executor = new Executor(executorId,hostname,env,userClassPath,isLocal = false)
+
     case _ => logInfo("receive something")
   }
 

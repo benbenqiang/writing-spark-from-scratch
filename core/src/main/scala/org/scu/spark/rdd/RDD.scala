@@ -48,14 +48,15 @@ abstract class RDD[T](
   protected def getDependencies: Seq[Dependency[_]] = deps
 
   def getStorageLevel :StorageLevel =storageLevel
-  def compute(split:Partition):Iterator[T]
+  def compute(split:Partition,context: TaskContext):Iterator[T]
 
-  def iterator(split:Partition):Iterator[T]={
-    compute(split)
+  /**判断partition是否在内存里*/
+  def iterator(split:Partition,context: TaskContext):Iterator[T]={
+    compute(split,context)
   }
 
   def map[U](f: T => U) :RDD[U]={
-    new MapPartitionsRDD[U,T](this,(id,iter)=>iter.map(f))
+    new MapPartitionsRDD[U,T](this,(context,id,iter)=>iter.map(f))
   }
 
 //  def count():Long = sc.runJob

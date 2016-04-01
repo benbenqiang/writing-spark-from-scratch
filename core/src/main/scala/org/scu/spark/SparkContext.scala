@@ -21,6 +21,8 @@ import scala.reflect.ClassTag
  */
 class SparkContext(sparkConf: SparkConf) extends Logging {
 
+  logInfo(s"Running Spark version $SPARK_VERSION")
+
   private var _conf: SparkConf = _
   private var _env: SparkEnv = _
 
