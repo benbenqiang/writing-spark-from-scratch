@@ -123,6 +123,7 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
    * 计算部分Partition，并将每个Partition的结果存入Array
    */
   def runJob[T, U: ClassTag](rdd: RDD[T], func: (TaskContext, Iterator[T]) => U, partitions: Seq[Int]): Array[U] = {
+    logDebug("runjob")
     val results = new Array[U](partitions.size)
     runJob[T,U](rdd, func, partitions, (index, res) => results(index) = res)
     results
@@ -158,10 +159,12 @@ object SparkContext {
   def main(args: Array[String]): Unit = {
     println(System.getProperty("java.io.tmpdir"))
     val conf = new SparkConf()
+    conf.set("spark.executor.port","7656")
     val sc = new SparkContext(conf)
     val array: Array[Int] = Array(1, 2, 3, 4, 6, 7, 8, 9, 10)
     val a: ParallelCollectionRDD[Int] = sc.parallelize(array, 10)
     a.map(_ * 2)
+    println(a.count())
     Thread.sleep(1000000)
   }
 }

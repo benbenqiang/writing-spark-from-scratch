@@ -8,6 +8,7 @@ import org.apache.commons.lang3.SerializationUtils
 import org.scu.spark._
 import org.scu.spark.rdd.RDD
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
@@ -51,6 +52,22 @@ private[spark] class DAGScheduler(
   private[scheduler] val eventProcessLoop = new DAGSchedulerEventProcessLoop(this)
 
 
+  private def updateJobIdStageIdMaps(jobId:Int,stage:Stage)={
+    @tailrec
+    def updateJobIdStageIdMapList(stages:List[Stage]):Unit ={
+      if(stages.nonEmpty){
+        val s = stages.head
+        s.jobIds += jobId
+        jobIdToStageIds.getOrElseUpdate(jobId,new mutable.HashSet[Int]()) += s.id
+        val parents = getParentStages(s.rdd,jobId)
+        /**父stage中还未包含JobId的，需要更新的stage*/
+        val parentsWithoutThisJobId = parents.filter{ ! _.jobIds.contains(jobId)}
+        updateJobIdStageIdMapList(parentsWithoutThisJobId ++ stages.tail)
+      }
+    }
+    updateJobIdStageIdMapList(List(stage))
+  }
+
   /**
    * 创建一个ResultStage
    * 注：spark中一个有两种stage：ResultStage，和ShuffleMapStage
@@ -65,7 +82,7 @@ private[spark] class DAGScheduler(
     /** 先生成父stage，最后生成结果stage */
     val stage = new ResultStage(id, rdd, func, partitions, parentStage, jobId)
     stageIdToStage(id) = stage
-    ???
+    updateJobIdStageIdMaps(jobId,stage)
     stage
   }
 
@@ -106,7 +123,7 @@ private[spark] class DAGScheduler(
    * 获取RDD所有的Stage列表，并且返回最后一个StageID
    */
   private def getParentStageAndId(rdd: RDD[_], firstJobId: Int): (List[Stage], Int) = {
-    val parentStage = getParentStage(rdd, firstJobId)
+    val parentStage = getParentStages(rdd, firstJobId)
     /** 最后生成末尾stage */
     val id = nextStageId.getAndIncrement()
     (parentStage, id)
@@ -166,7 +183,7 @@ private[spark] class DAGScheduler(
   /**
    * 生成Stage的关键方法：使用广度优先便利获取并生成依赖的父Stage
    */
-  private def getParentStage(rdd: RDD[_], firstJobId: Int): List[Stage] = {
+  private def getParentStages(rdd: RDD[_], firstJobId: Int): List[Stage] = {
     /** 返回结果：依赖的父Stage */
     val parents = new mutable.HashSet[Stage]()
     /** 记录遍历过哪些RDD */
@@ -236,6 +253,7 @@ private[spark] class DAGScheduler(
         } else {
           ???
         }
+        cacheLocs(rdd.id) = locs
       }
       cacheLocs(rdd.id)
     }
@@ -279,6 +297,7 @@ private[spark] class DAGScheduler(
                     resultHandler: (Int, U) => Unit,
                     properties:Properties): Unit = {
     val start = System.nanoTime()
+    logDebug("starting job on "+start)
     val waiter = submitJob(rdd, func, partitions, resultHandler,properties)
     waiter.awaitResult() match {
       case JobSucceeded => logInfo(s"Job ${waiter.jobId},took ${System.nanoTime() - start} s")
@@ -317,7 +336,7 @@ private[spark] class DAGScheduler(
     logInfo("Missing parents:" + getMissingParentStages(finalStage))
 
     val jobSubmissionTime = System.currentTimeMillis()
-    jobIdToActiveJob(jobId)
+    jobIdToActiveJob(jobId)=job
     activeJobs += job
     finalStage.setActiveJob(job)
     val stageIds = jobIdToStageIds(jobId).toArray
@@ -338,7 +357,7 @@ private[spark] class DAGScheduler(
         /** 没有依赖的stage未完成 */
         if (missing.isEmpty) {
           logInfo(s"Submitting $stage (${stage.rdd}),which has no missing parents")
-
+          submitMissingTasks(stage,jobId.get)
         } else {
           for (parent <- missing) {
             submitStage(parent)
@@ -448,9 +467,10 @@ private[spark] class DAGScheduler(
   }
 
   def getPreferredLocs(rdd:RDD[_],partition:Int):Seq[TaskLocation]={
-    ???
+    Seq(TaskLocation("testLocationHost","testExecutorID"))
   }
 
+  eventProcessLoop.start()
 }
 
 private[scheduler] class DAGSchedulerEventProcessLoop(dagScheduler: DAGScheduler) extends EventLoop[DAGSchedulerEvent]("dag-scheduler-event-loop") with Logging {
@@ -460,10 +480,12 @@ private[scheduler] class DAGSchedulerEventProcessLoop(dagScheduler: DAGScheduler
   }
 
   override protected def onReceive(event: DAGSchedulerEvent): Unit = {
-
+    doOnReceive(event)
   }
 
   private def doOnReceive(event: DAGSchedulerEvent) = event match {
-    case JobSubmit(jobId, rdd, func, partitions, listerner,properties) => dagScheduler.handleJobSubmitted(jobId, rdd, func, partitions, listerner,properties)
+    case JobSubmit(jobId, rdd, func, partitions, listerner,properties) =>
+      logDebug("EnventProcee receive handleJob Message")
+      dagScheduler.handleJobSubmitted(jobId, rdd, func, partitions, listerner,properties)
   }
 }
