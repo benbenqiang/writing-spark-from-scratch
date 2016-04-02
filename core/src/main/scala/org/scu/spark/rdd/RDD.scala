@@ -16,6 +16,13 @@ abstract class RDD[T](
                    @transient private var _sc:SparkContext,
                    @transient private var deps:Seq[Dependency[_]] ) extends Serializable with Logging{
 
+  private def sc :SparkContext={
+    if(_sc == null){
+      throw new SparkException("This Rdd lacks a sparkContext")
+    }
+    _sc
+  }
+
   private var dependencies_ :Seq[Dependency[_]] = null
 
   val partitioner : Option[Partitioner] = None
@@ -59,7 +66,7 @@ abstract class RDD[T](
     new MapPartitionsRDD[U,T](this,(context,id,iter)=>iter.map(f))
   }
 
-//  def count():Long = sc.runJob
+  def count():Long = sc.runJob(this, (iter: Iterator[_]) =>iter.size.toLong).sum
 
   private var storageLevel : StorageLevel = StorageLevel.NONE
 }

@@ -1,6 +1,6 @@
 package org.scu.spark.rdd
 
-import org.scu.spark.{Partition, SparkContext}
+import org.scu.spark.{TaskContext, Partition, SparkContext}
 
 /**
  * 通过sc.parallelize创建的RDD类型
@@ -17,7 +17,7 @@ class ParallelCollectionRDD[T](sc: SparkContext,
     slice.indices.map(i =>new ParallelCollectionPartition[T](id,i,slice(i))).toArray
   }
 
-  override def compute(split: Partition): Iterator[T] = {
+  override def compute(split: Partition,context: TaskContext): Iterator[T] = {
     split.asInstanceOf[ParallelCollectionPartition[T]].iterator
   }
 
