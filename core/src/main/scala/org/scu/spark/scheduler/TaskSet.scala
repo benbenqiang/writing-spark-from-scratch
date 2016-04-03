@@ -10,7 +10,7 @@ private[spark] class TaskSet(
                             val tasks : Array[Task[_]],
                             val stageId : Int,
                             val stageAttemptId:Int,
-                            val property : Int,
+                            val priority : Int,
                             val properties:Properties
                               ) {
   val id : String = stageId + "." + stageAttemptId

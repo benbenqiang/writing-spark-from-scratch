@@ -43,6 +43,12 @@ private[spark] class TaskSchedulerImpl(
     }
   }
 
+  private[scheduler] def createTaskSetManager(
+                                             taskSet: TaskSet,
+                                             maxTaskFailures:Int
+                                               ):TaskSetManager={
+    new TaskSetManager(this,taskSet,maxTaskFailures)
+  }
   override def executorLost(executorId: String, reason: String): Unit = ???
 
   override def executorHeartbeatReceived(execId: String, taskMetrics: Array[(Long, TaskMetrics)], blockManagerID: BlockManagerID): Boolean = ???
