@@ -1,8 +1,12 @@
 package org.scu.spark.scheduler
 
 import org.scu.spark.executor.TaskMetrics
+import org.scu.spark.rdd.SparkException
 import org.scu.spark.storage.BlockManagerID
 import org.scu.spark.{Logging, SparkContext}
+
+import scala.collection.mutable
+import scala.collection.mutable.HashMap
 
 /**
  * 通过SchedulerBackend在不同的集群上调度task
@@ -17,11 +21,29 @@ private[spark] class TaskSchedulerImpl(
 
   def this(sc:SparkContext) = this(sc,sc.conf.getInt("spark.task.maxFailures",4))
 
+  val conf = sc.conf
+
+  /**通过StageId 和 attempt的次数定位TaskSetManager*/
+  private val taskSetsByStagewIdAndAttempt = new HashMap[Int,HashMap[Int,TaskSetManager]]
+
   var _backend : SchedulerBackend = _
+
+  var schedulableBuilder : SchedulableBuilder = null
+  var rootPool:Pool = null
+  private val schedulingModeConf = conf.get("spark.scheduler.mode","FIFO")
+  val schedulingMode = try{SchedulingMode.withName(schedulingModeConf.toUpperCase())
+  } catch {
+    case e:NoSuchElementException=>
+      throw new SparkException("unrecognized spark.scheduler.mode :"+schedulingModeConf)
+  }
+
 
   def initialize(backend:SchedulerBackend) ={
     _backend = backend
-    //TODO SchedulerBuilder
+    rootPool = new Pool("",schedulingMode,0,0)
+    schedulableBuilder = new FIFOSchedulableBuilder(rootPool)
+
+    schedulableBuilder.buildPools()
   }
   override def start(): Unit = {
     _backend.start()
@@ -39,7 +61,13 @@ private[spark] class TaskSchedulerImpl(
     val tasks = taskSet.tasks
     logInfo("Adding task set "+taskSet.id + " with " + tasks.length + "tasks")
     this.synchronized{
-//      val manager = createTaskSet
+      val manager = createTaskSetManager(taskSet,maxTaskFailures)
+      val stage = taskSet.stageId
+      val stageTaskSets = taskSetsByStagewIdAndAttempt.getOrElseUpdate(stage,new HashMap[Int,TaskSetManager])
+      stageTaskSets(taskSet.stageAttemptId)=manager
+      //TODO conflickt TaskSet
+      schedulableBuilder.addTaskSetManager(manager,manager.taskSet.properties)
+
     }
   }
 
