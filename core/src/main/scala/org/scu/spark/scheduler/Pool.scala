@@ -3,6 +3,7 @@ package org.scu.spark.scheduler
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
 
 import org.scu.spark.Logging
+import org.scu.spark.scheduler.SchedulingMode.SchedulingMode
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -11,7 +12,7 @@ import scala.collection.mutable.ArrayBuffer
  */
 private[spark] class Pool(
                            val poolName: String,
-                           //TODO SchedulingMode
+                           val schedulingMode: SchedulingMode,
                            initMinShare: Int,
                            initWeight: Int
                            )
