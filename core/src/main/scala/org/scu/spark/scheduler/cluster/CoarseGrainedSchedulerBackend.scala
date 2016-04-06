@@ -5,10 +5,13 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.{Actor, ActorRef, Props}
 import org.scu.spark.Logging
 import org.scu.spark.rpc.akka.{RpcAddress, AkkaUtil, AkkaRpcEnv}
+import org.scu.spark.scheduler.client.WorkerOffer
 import org.scu.spark.scheduler.cluster.CoarseGrainedClusterMessage.{RegisteredExectutor, RegisterExecutorFailed, RegisterExecutor, RetrieveSparkProps}
 import org.scu.spark.scheduler.{SchedulerBackend, TaskSchedulerImpl}
 
+import scala.collection.mutable
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -32,6 +35,10 @@ private[spark] class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
   private val executorDataMap = new HashMap[String,ExecutorData]
   /**applicaiton请求executor的个数未满足的个数*/
   private var numPendingExecutors = 0
+  /**需要被移除的executor,知道原因的*/
+  private val executorPendingToRemove = new HashMap[String,Boolean]
+  /**需要被移除的executor，未知原因的*/
+  private val executorsPendingLossReason= new HashSet[String]
 
   override def start(): Unit = {
     val properties: ArrayBuffer[(String, String)] = new ArrayBuffer[(String, String)]
@@ -78,7 +85,21 @@ private[spark] class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
           }
           sender() ! RegisteredExectutor(executorAddress.host)
           //TODO SparkListener
+          makeOffers()
         }
+    }
+
+    private def makeOffers() ={
+      val activeExecutors = executorDataMap.filterKeys(executorIsAlive)
+      val workOffers = activeExecutors.map{
+        case (id,executorData)=>
+          new WorkerOffer(id,executorData.executorHost,executorData.freeCores)
+      }.toSeq
+      //TODO launchTasks
+    }
+
+    private def executorIsAlive(executorId:String):Boolean=synchronized{
+      !executorPendingToRemove.contains(executorId) && !executorsPendingLossReason.contains(executorId)
     }
   }
 
