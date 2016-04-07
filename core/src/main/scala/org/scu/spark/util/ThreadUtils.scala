@@ -56,7 +56,7 @@ object ThreadUtils {
   /**
    * 周期线程
    */
-  def newDaemonSingleThreadScheduledExecutor(threadName:String):ExecutorService={
+  def newDaemonSingleThreadScheduledExecutor(threadName:String):ScheduledThreadPoolExecutor={
     val threadFactory = new ThreadFactoryBuilder().setDaemon(true).setNameFormat(threadName).build()
     val executor = new ScheduledThreadPoolExecutor(1,threadFactory)
     /**task一被cancell，就会从work queue中移除，否则直到delay time*/

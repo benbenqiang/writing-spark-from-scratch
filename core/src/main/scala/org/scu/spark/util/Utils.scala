@@ -6,6 +6,8 @@ import java.util.UUID
 import org.apache.commons.lang3.SystemUtils
 import org.scu.spark.{Logging, SparkConf}
 
+import scala.util.control.NonFatal
+
 /**
  * Created by bbq on 2015/12/23
  */
@@ -59,5 +61,16 @@ private[spark] object Utils extends Logging{
     dir
   }
 
+  /**使用call-by-name
+    * 仅仅抛出fatal的异常
+    * */
+  def tryLogNonFatalError(block: => Unit)={
+    try{
+      block
+    }catch {
+      case NonFatal(t) =>
+        logError(s"Uncaught exception in thread ${Thread.currentThread().getName}",t)
+    }
+  }
 
 }

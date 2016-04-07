@@ -11,7 +11,7 @@ import java.nio.channels.Channels
 object SerializeCustom {
   def main(args: Array[String]) {
     /**分配一块内存空间*/
-    var buffer = ByteBuffer.allocate(100)
+    val buffer = ByteBuffer.allocate(100)
     buffer.put("hehesssssssssssssssssssssda".getBytes())
     buffer.flip()
     /**读写的文件*/
