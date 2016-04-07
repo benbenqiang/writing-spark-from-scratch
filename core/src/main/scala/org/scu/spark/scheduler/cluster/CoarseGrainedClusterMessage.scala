@@ -36,4 +36,8 @@ private[spark] object CoarseGrainedClusterMessage {
   case class StatusUpdate(executorId: String, taskId: Long, state: TaskState, data: ByteBuffer) extends CoarseGrainedClusterMessage
 
   case object RetrieveSparkProps extends CoarseGrainedClusterMessage
+
+  /** Driver发给Driver的*/
+  case object ReviveOffers extends CoarseGrainedClusterMessage
+
 }
