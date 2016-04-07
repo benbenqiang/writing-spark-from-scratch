@@ -14,7 +14,7 @@ import java.nio.ByteBuffer
 object NIOByteBufferDemo {
   def fileChannelByteBuffer() = {
     val fileSep = File.separator
-    val file = new File(s"scala-learning${fileSep}src${fileSep}resources${fileSep}FileChanelFile.data")
+    val file = new File(s"scala-learning${fileSep}src${fileSep}main${fileSep}resources${fileSep}FileChanelFile.data")
     val stream = new FileOutputStream(file)
     val channel = stream.getChannel
     val buffer = ByteBuffer.allocate(1024)
