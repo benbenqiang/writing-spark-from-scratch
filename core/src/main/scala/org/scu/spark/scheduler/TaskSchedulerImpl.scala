@@ -26,6 +26,9 @@ private[spark] class TaskSchedulerImpl(
   /**通过StageId 和 attempt的次数定位TaskSetManager*/
   private val taskSetsByStagewIdAndAttempt = new HashMap[Int,HashMap[Int,TaskSetManager]]
 
+  @volatile private var hasReceivedTRask = false
+  @volatile private var hasLaunchedTask = false
+
   var _backend : SchedulerBackend = _
 
   var schedulableBuilder : SchedulableBuilder = null
@@ -68,6 +71,9 @@ private[spark] class TaskSchedulerImpl(
       //TODO conflickt TaskSet
       schedulableBuilder.addTaskSetManager(manager,manager.taskSet.properties)
 
+      if(!isLocal && !hasReceivedTRask){
+
+      }
     }
   }
 
