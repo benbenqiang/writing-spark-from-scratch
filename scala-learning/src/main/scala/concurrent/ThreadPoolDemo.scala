@@ -10,6 +10,7 @@ import java.util.concurrent.{TimeUnit, Executors, Executor}
  *               2.若队列添加失败（到达容量）则直接创建线程，若当前线程大小小于maxPollsize创建成功，等于则失败
  * 配置线程池比较复杂，JavaDoc中建议使用Executors中的常用的一些静态工厂，生成线程池
  * 相关学习网站；http://www.oschina.net/question/565065_86540
+ *
  * Created by bbq on 2015/11/13
  */
 object ThreadPoolDemo {
@@ -42,7 +43,7 @@ object ThreadPoolDemo {
   }
 
   /**
-   * 创建一个
+   * 定期运行的线程，若有线程延期，那么后面的线程则等待
    */
   def scheduledThreadDemo(threads:Array[Thread]) = {
     val pool = Executors.newScheduledThreadPool(1)
@@ -53,9 +54,35 @@ object ThreadPoolDemo {
     },1000,1000,TimeUnit.MILLISECONDS)
     pool.scheduleAtFixedRate(new Runnable {
       override def run(): Unit = {
-        println(System.nanoTime())
+        println("1========="+System.currentTimeMillis())
+        Thread.sleep(1000)
+        Thread.currentThread()
       }
-    },1000,500,TimeUnit.MILLISECONDS)
+    },1000,1000,TimeUnit.MILLISECONDS)
+    pool.scheduleAtFixedRate(new Runnable {
+      override def run(): Unit = {
+        println("2========="+System.currentTimeMillis())
+        Thread.sleep(1000)
+      }
+    },1000,1000,TimeUnit.MILLISECONDS)
+    pool.scheduleAtFixedRate(new Runnable {
+      override def run(): Unit = {
+        println("3========="+System.currentTimeMillis())
+        Thread.sleep(1000)
+      }
+    },1000,1000,TimeUnit.MILLISECONDS)
+    pool.scheduleAtFixedRate(new Runnable {
+      override def run(): Unit = {
+        println("4========="+System.currentTimeMillis())
+        Thread.sleep(1000)
+      }
+    },1000,1000,TimeUnit.MILLISECONDS)
+    pool.scheduleAtFixedRate(new Runnable {
+      override def run(): Unit = {
+        println("5========="+System.currentTimeMillis())
+        Thread.sleep(1000)
+      }
+    },1000,1000,TimeUnit.MILLISECONDS)
   }
 
 
@@ -73,8 +100,8 @@ object ThreadPoolDemo {
     val threads :Array[Thread]= Array.fill[Thread](10)(new Thread(new MyThread()))
 //    SingleThreadDemo(threads)
 //    fixedThreadDemo(threads)
-    cachedThreadDemo(threads)
-//    scheduledThreadDemo(threads)
+//    cachedThreadDemo(threads)
+    scheduledThreadDemo(threads)
 
   }
 }
