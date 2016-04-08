@@ -108,6 +108,7 @@ private[spark] class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
     }
 
     private def makeOffers() ={
+      /**获取worker资源*/
       val activeExecutors = executorDataMap.filterKeys(executorIsAlive)
       val workOffers = activeExecutors.map{
         case (id,executorData)=>

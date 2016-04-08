@@ -1,7 +1,11 @@
 package org.scu.spark.scheduler
 
+import java.util.{TimerTask, Timer}
+
 import org.scu.spark.executor.TaskMetrics
 import org.scu.spark.rdd.SparkException
+import org.scu.spark.scheduler.client.WorkerOffer
+import org.scu.spark.scheduler.cluster.TaskDescription
 import org.scu.spark.storage.BlockManagerID
 import org.scu.spark.{Logging, SparkContext}
 
@@ -9,7 +13,8 @@ import scala.collection.mutable
 import scala.collection.mutable.HashMap
 
 /**
- * 通过SchedulerBackend在不同的集群上调度task
+ * 通过SchedulerBackend在不同的集群上调度task。
+ * 与具体的task运行由不同的backend负责（standalone,yarn,messos），taskschedulerimple 负责调度相关。
  *
  * Created by bbq on 2015/12/11
  */
@@ -28,6 +33,9 @@ private[spark] class TaskSchedulerImpl(
 
   @volatile private var hasReceivedTRask = false
   @volatile private var hasLaunchedTask = false
+  private val starvationTimer = new Timer(true)
+
+  val STARVATION_TIMEOUT_MS = conf.getInt("spark.starvation.timeout",15000)
 
   var _backend : SchedulerBackend = _
 
@@ -72,10 +80,26 @@ private[spark] class TaskSchedulerImpl(
       schedulableBuilder.addTaskSetManager(manager,manager.taskSet.properties)
 
       if(!isLocal && !hasReceivedTRask){
-
+        starvationTimer.scheduleAtFixedRate(new TimerTask(){
+          override def run(): Unit = {
+            /**TaskSchedulerImple 在 resourceOffers 的时候是否成功获取到了资源*/
+            if(!hasLaunchedTask){
+              logWarning("Initial job has not accepted any resources;" +
+              "check your cluster UI to ensure that worker are registered " +
+              "and have sufficient resources"
+              )
+            }else{
+              this.cancel()
+            }
+          }
+        },STARVATION_TIMEOUT_MS,STARVATION_TIMEOUT_MS)
       }
+      hasReceivedTRask = true
     }
+    /**通知backend中的driver，开始获取worker资源*/
+    _backend.reviveOffers()
   }
+
 
   private[scheduler] def createTaskSetManager(
                                              taskSet: TaskSet,
