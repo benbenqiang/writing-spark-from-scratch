@@ -9,7 +9,6 @@ import org.scu.spark.scheduler.cluster.TaskDescription
 import org.scu.spark.storage.BlockManagerID
 import org.scu.spark.{Logging, SparkContext}
 
-import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
 import scala.util.Random
 
@@ -60,14 +59,21 @@ private[spark] class TaskSchedulerImpl(
       throw new SparkException("unrecognized spark.scheduler.mode :"+schedulingModeConf)
   }
 
-
+  /**初始化TaskSchedulerImple,根据不同的调度策略（FIFO，FAIR）构建调度池*/
   def initialize(backend:SchedulerBackend) ={
     _backend = backend
     rootPool = new Pool("",schedulingMode,0,0)
-    schedulableBuilder = new FIFOSchedulableBuilder(rootPool)
-
+    schedulableBuilder = {
+      schedulingMode match {
+        case SchedulingMode.FIFO =>
+          new FIFOSchedulableBuilder(rootPool)
+        case SchedulingMode.FAIR =>
+          new FIFOSchedulableBuilder(rootPool)
+      }
+    }
     schedulableBuilder.buildPools()
   }
+
   override def start(): Unit = {
     _backend.start()
   }
@@ -80,6 +86,7 @@ private[spark] class TaskSchedulerImpl(
 
   override def canelTasks(stageId: Int, interruptThread: Boolean): Unit = ???
 
+  /**DAGScheduler 通过这个方法将taskSet交给TaskScheduler*/
   override def submitTasks(taskSet: TaskSet) = {
     val tasks = taskSet.tasks
     logInfo("Adding task set "+taskSet.id + " with " + tasks.length + "tasks")
@@ -133,11 +140,22 @@ private[spark] class TaskSchedulerImpl(
       }
     }
 
-
+    /**对当前已经提交给TaskScheduler的所有可运行任务进行排序，开始计算*/
     val shuffledOffers = Random.shuffle(offers)
     val tasks = shuffledOffers.map(o=>new ArrayBuffer[TaskDescription](o.cores))
     val availableCpus = shuffledOffers.map(_.cores).toArray
-    val sortedTaskSets =
+    val sortedTaskSets = rootPool.getSortedTaskSetQueue
+    for(taskSet <- sortedTaskSets){
+      logDebug(s"parentName: ${taskSet.parent.name} ,name: ${taskSet.name} , runningTasks: ${taskSet.runingTasks}")
+      if(newExecAvail){
+        taskSet.executorAdded()
+      }
+    }
+
+    /**在对任务进行排序之后，需要考虑那些task要在哪个worker上运行，通过preferredLocatlity,
+      * 优先级顺序是： PROCESS_LOCAL,NODE_LOCAL,NO_PREF,RACK_LOCAL,ANY
+      * */
+
     ???
   }
 

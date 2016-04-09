@@ -4,6 +4,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 
 import org.scu.spark.Logging
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -23,11 +24,13 @@ private[spark] class TaskSetManager (
   //def schedulingMode:SchedulingMode
   override def weight: Int = ???
 
-  override def runingTasks: Int = ???
+  val runningTaskSet = new mutable.HashSet()
+
+  override def runingTasks: Int = runningTaskSet.size
 
   override def checkSpeculatableTasks(): Boolean = ???
 
-  override def name: String = ???
+  override var name: String = "TaskSet_"+taskSet.stageId.toString
 
   override def removeSchedulable(schedulable: Schedulable): Unit = ???
 
@@ -42,4 +45,8 @@ private[spark] class TaskSetManager (
   override def executorLost(executorId: String, host: String, reason: ExecutorLossReason): Unit = ???
 
   override def stageId: Int = ???
+
+  def executorAdded(): Unit ={
+    ???
+  }
 }

@@ -210,6 +210,7 @@ private[spark] class DAGScheduler(
     parents.toList
   }
 
+  /**通过RDD的以来关系，找出出发action的RDD所有以来的stage*/
   private def getMissingParentStages(stage: Stage): List[Stage] = {
     val missing = new mutable.HashSet[Stage]()
     val visited = new mutable.HashSet[RDD[_]]()
@@ -454,7 +455,7 @@ private[spark] class DAGScheduler(
         ???
     }
 
-    /** 向taskScheduler提交任务 */
+    /** 向taskScheduler提交任务 ，至此，DAGScheduler已经完成了他的使命*/
     if (tasks.nonEmpty) {
       logInfo(s"Submitting ${tasks.size} missing tasks form $stage (${stage.rdd})")
       stage.pendingPartitons ++= tasks.map(_.partitionId)

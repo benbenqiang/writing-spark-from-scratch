@@ -5,6 +5,7 @@ import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
 import org.scu.spark.Logging
 import org.scu.spark.scheduler.SchedulingMode.SchedulingMode
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -30,6 +31,16 @@ private[spark] class Pool(
   var name = poolName
   var parent:Pool = null
 
+  /**根据mode决定不同的调度算法，对taskset的执行顺序进行排序*/
+  var taskSetSchedulingAlgoritm :SchedulingAlgorithm={
+    schedulingMode match {
+      case SchedulingMode.FIFO =>
+        new FIFOSchedulingAlgorithm
+      case SchedulingMode.FAIR =>
+        new FIFOSchedulingAlgorithm
+    }
+  }
+
   override def runingTasks: Int = ???
 
   override def addSchedulable(schedulable: Schedulable): Unit = ???
@@ -38,7 +49,15 @@ private[spark] class Pool(
 
   override def removeSchedulable(schedulable: Schedulable): Unit = ???
 
-  override def getSortedTaskSetQueue: ArrayBuffer[TaskSetManager] = ???
+  /**对调度器中的TaskSet进行排序*/
+  override def getSortedTaskSetQueue: ArrayBuffer[TaskSetManager] = {
+    var sortedTaskSetQueue = new ArrayBuffer[TaskSetManager]
+    val sortedSchedulabQueue = schedulableQueue.asScala.toSeq.sortWith(taskSetSchedulingAlgoritm.compare)
+    for (schedulable <- sortedSchedulabQueue){
+      sortedTaskSetQueue ++= schedulable.getSortedTaskSetQueue
+    }
+    sortedTaskSetQueue
+  }
 
   override def getSchedulableByName(name: String): Schedulable = ???
 
