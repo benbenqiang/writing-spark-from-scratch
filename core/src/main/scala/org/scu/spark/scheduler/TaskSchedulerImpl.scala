@@ -152,12 +152,40 @@ private[spark] class TaskSchedulerImpl(
       }
     }
 
-    /**在对任务进行排序之后，需要考虑那些task要在哪个worker上运行，通过preferredLocatlity,
+    /**
+     *  在对任务进行排序之后，需要考虑那些task要在哪个worker上运行，通过preferredLocatlity,
       * 优先级顺序是： PROCESS_LOCAL,NODE_LOCAL,NO_PREF,RACK_LOCAL,ANY
+      * 通过运行优先级我们可以做delay scheduling
       * */
+    var launchedTask = false
+    for (taskSet <- sortedTaskSets; maxLocality <- taskSet.myLocalityLevels){
+      do{
 
-    ???
+      }while(launchedTask)
+    }
+
+    /**如果tasks为空，说明没有申请到资源*/
+    if(tasks.size>0){
+      hasLaunchedTask = true
+    }
+    return tasks
   }
+
+  def hasExecuotrsAliveOnHost(host:String):Boolean = synchronized{
+    executorsByHost.contains(host)
+  }
+
+  def hasHostAliveOnRack(rack:String):Boolean = synchronized{
+    hostsByRack.contains(rack)
+  }
+  /**
+   * ??? 这个能保证executor存活吗？
+   * */
+  def isExecutorAlive(execId:String):Boolean = synchronized{
+    executorIdToTaskCount.contains(execId)
+  }
+
+
 
   def getRackForHost(value:String):Option[String] = None
 
