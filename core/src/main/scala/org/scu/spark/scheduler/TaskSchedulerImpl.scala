@@ -1,5 +1,6 @@
 package org.scu.spark.scheduler
 
+import java.util.concurrent.atomic.AtomicLong
 import java.util.{TimerTask, Timer}
 
 import org.scu.spark.executor.TaskMetrics
@@ -37,6 +38,7 @@ private[spark] class TaskSchedulerImpl(
   @volatile private var hasLaunchedTask = false
   private val starvationTimer = new Timer(true)
 
+  val nextTaskId = new AtomicLong(0)
 
   /**每一个Executor所运行的Task总数*/
   private val executorIdToTaskCount = new HashMap[String,Int]
@@ -77,6 +79,8 @@ private[spark] class TaskSchedulerImpl(
     }
     schedulableBuilder.buildPools()
   }
+
+  def newTaskId():Long = nextTaskId.getAndIncrement()
 
   override def start(): Unit = {
     _backend.start()
@@ -138,7 +142,7 @@ private[spark] class TaskSchedulerImpl(
       if(availableCpus(i) >= CPUS_PER_TASK){
         try{
           for (task <- taskSet.resourceOffer(execId,host,maxLocality)){
-
+            tasks(i)
           }
         }catch{
           case e : TaskNotSerializableException =>

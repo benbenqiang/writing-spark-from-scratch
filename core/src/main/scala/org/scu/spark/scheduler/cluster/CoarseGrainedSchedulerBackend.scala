@@ -115,7 +115,7 @@ private[spark] class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
           new WorkerOffer(id,executorData.executorHost,executorData.freeCores)
       }.toSeq
       /**如何调度交给taskScheduler，具体任务分发的细节，交给Backend*/
-//      launchTasks
+      launchTasks(scheduler.resourceOffers(workOffers))
     }
 
     private def executorIsAlive(executorId:String):Boolean=synchronized{

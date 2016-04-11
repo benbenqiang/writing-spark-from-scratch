@@ -1,5 +1,6 @@
 package org.scu.spark.scheduler
 
+import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentLinkedQueue
 
 import org.scu.spark.{SparkEnv, Logging}
@@ -32,6 +33,8 @@ private[spark] class TaskSetManager (
   /**记录每个task失败时的executorID 以及对应的时间*/
   private val failedExecutors = new mutable.HashMap[Int,mutable.HashMap[String,Long]]()
 
+  val taskAttempts = Array.fill[List[TaskInfo]](numTasks)(Nil)
+
   override var parent: Pool = _
 
   override def addSchedulable(schedulable: Schedulable): Unit = ???
@@ -62,6 +65,8 @@ private[spark] class TaskSetManager (
   var pendingTasksWithNoPrefs = new ArrayBuffer[Int]
 
   val allPendingTasks = new ArrayBuffer[Int]
+
+  val taskInfos = new mutable.HashMap[Long,TaskInfo]()
 
   var myLocalityLevels = computeValidLocalityLevels()
 
@@ -230,7 +235,21 @@ private[spark] class TaskSetManager (
         //TODO getAllowedLocalityLevel
       }
 
-      dequeueTask(execId,host,allowedLocality)
+      dequeueTask(execId,host,allowedLocality) match {
+        case Some((index,taskLocality,speculative)) =>
+          val task = tasks(index)
+          val taskId = sched.newTaskId()
+          copiesRunning(index) += 1
+          val attemptNum = taskAttempts(index).size
+          val info = new TaskInfo(taskId,index,attemptNum,curTime,execId,host,taskLocality,speculative)
+          taskInfos(taskId) = info
+          taskAttempts(index) = info :: taskAttempts(index)
+          //TODO Update locality level
+          val startTime = System.currentTimeMillis()
+//          val serializedTask:ByteBuffer=try{
+//
+//          }
+      }
       }
 
     ???
