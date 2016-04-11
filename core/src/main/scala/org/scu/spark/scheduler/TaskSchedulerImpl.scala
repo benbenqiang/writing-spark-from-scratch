@@ -6,8 +6,9 @@ import org.scu.spark.executor.TaskMetrics
 import org.scu.spark.rdd.SparkException
 import org.scu.spark.scheduler.client.WorkerOffer
 import org.scu.spark.scheduler.cluster.TaskDescription
+import org.scu.spark.scheduler.TaskLocality.TaskLocality
 import org.scu.spark.storage.BlockManagerID
-import org.scu.spark.{Logging, SparkContext}
+import org.scu.spark.{TaskNotSerializableException, Logging, SparkContext}
 
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
 import scala.util.Random
@@ -36,6 +37,7 @@ private[spark] class TaskSchedulerImpl(
   @volatile private var hasLaunchedTask = false
   private val starvationTimer = new Timer(true)
 
+
   /**每一个Executor所运行的Task总数*/
   private val executorIdToTaskCount = new HashMap[String,Int]
   /**每个Host上所运行的Executor集合*/
@@ -47,6 +49,8 @@ private[spark] class TaskSchedulerImpl(
 
 
   val STARVATION_TIMEOUT_MS = conf.getInt("spark.starvation.timeout",15000)
+
+  val CPUS_PER_TASK=conf.getInt("spark.task.cpus",1)
 
   var _backend : SchedulerBackend = _
 
@@ -119,8 +123,34 @@ private[spark] class TaskSchedulerImpl(
     _backend.reviveOffers()
   }
 
+  /**轮询workerOffers，为每一个executor分配Task*/
+  private def resourceOfferSingleTaskSet(
+                                        taskSet:TaskSetManager,
+                                        maxLocality:TaskLocality,
+                                        shuffleOffers:Seq[WorkerOffer],
+                                        availableCpus:Array[Int],
+                                        tasks:Seq[ArrayBuffer[TaskDescription]]
+                                          ):Boolean={
+    var launchedTask = false
+    for(i <- shuffleOffers.indices){
+      val execId = shuffleOffers(i).executorId
+      val host = shuffleOffers(i).host
+      if(availableCpus(i) >= CPUS_PER_TASK){
+        try{
+          for (task <- taskSet.resourceOffer(execId,host,maxLocality)){
+
+          }
+        }catch{
+          case e : TaskNotSerializableException =>
+            logError(s"Resource offer failed,task set ${taskSet.name} was not ser")
+        }
+      }
+    }
+    return launchedTask
+  }
+
   /**
-   * 根据backend传来的workerOffers,将task分配给不同的worker，
+   *  根据backend传来的workerOffers,将task分配给不同的worker，
     * 返回TaskDescription给Backend
     * Backend 通过TaskDescription与Executor通信，进行任务的分发运行
     * */
@@ -160,7 +190,7 @@ private[spark] class TaskSchedulerImpl(
     var launchedTask = false
     for (taskSet <- sortedTaskSets; maxLocality <- taskSet.myLocalityLevels){
       do{
-
+        launchedTask = resourceOfferSingleTaskSet(taskSet,maxLocality,shuffledOffers,availableCpus,tasks)
       }while(launchedTask)
     }
 
