@@ -1,6 +1,11 @@
 package org.scu.spark.scheduler
 
+import java.nio.ByteBuffer
+
 import org.scu.spark.Accumulator
+import org.scu.spark.serializer.SerializerInstance
+
+import scala.collection.mutable
 
 /**
  * Spark中执行单元,有两种
@@ -17,4 +22,17 @@ private[spark] abstract class Task[T](
                                      val partitionId:Int,
                                      internalAccumulators:Seq[Accumulator[Long]]
                                        ) extends Serializable{
+}
+
+private[spark] object Task{
+
+  /**把Task以及对应以来的jar包以及文件进行序列化*/
+  def SerializeWithDependencies(
+                               task:Task[_],
+                               currentFiles:mutable.HashMap[String,Long],
+                               currrentJars:mutable.HashMap[String,Long],
+                               serializer:SerializerInstance
+                                 ):ByteBuffer={
+    ???
+  }
 }
