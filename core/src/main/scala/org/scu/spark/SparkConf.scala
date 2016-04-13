@@ -61,6 +61,10 @@ class SparkConf extends Cloneable with Logging {
     getOption(key).map(_.toLong).getOrElse(throw new NoSuchElementException(key))
   }
 
+  def getBoolean(key:String,defaultValue:Boolean) : Boolean = {
+    getOption(key).map(_.toBoolean).getOrElse(defaultValue)
+  }
+
   def getAll: Array[(String, String)] = {
     settings.entrySet().asScala.map { ent => (ent.getKey, ent.getValue) }.toArray
   }

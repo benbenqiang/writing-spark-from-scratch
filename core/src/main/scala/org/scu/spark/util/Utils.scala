@@ -1,6 +1,6 @@
 package org.scu.spark.util
 
-import java.io.{OutputStream, File}
+import java.io.{IOException, OutputStream, File}
 import java.nio.ByteBuffer
 import java.util.UUID
 

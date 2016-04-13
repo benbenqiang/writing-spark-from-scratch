@@ -32,6 +32,9 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
 
   private[spark] def env: SparkEnv = _env
 
+  private[spark] val addedFiles = new mutable.HashMap[String,Long]
+  private[spark] val addedJars = new mutable.HashMap[String,Long]
+
   @volatile private var _dagScheduler: DAGScheduler = _
   private var _schedulerBackend : SchedulerBackend = _
   private var _taskScheduler : TaskScheduler = _

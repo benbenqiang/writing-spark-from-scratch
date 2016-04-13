@@ -32,7 +32,7 @@ private[spark] object Task{
     * 转换成ByteBuffer，放到TaskDescription中
     * ByteBuffer本身是没有实现序列化的，在TaskDescription中通过自定义readObject和wrtieObject
     * */
-  def SerializeWithDependencies(
+  def serializeWithDependencies(
                                task:Task[_],
                                currentFiles:mutable.HashMap[String,Long],
                                currentJars:mutable.HashMap[String,Long],

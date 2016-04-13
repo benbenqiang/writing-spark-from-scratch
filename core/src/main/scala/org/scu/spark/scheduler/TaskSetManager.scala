@@ -25,6 +25,7 @@ private[spark] class TaskSetManager (
   private val EXECUOTR_TASK_BLACKLIST_TIMEOUT = conf.getLong("spark.scheduler.executorTaskBlacklistTime",0L)
   val env = SparkEnv.env
 
+
   val tasks = taskSet.tasks
   val numTasks=tasks.length
   val copiesRunning = new Array[Int](numTasks)
@@ -235,20 +236,22 @@ private[spark] class TaskSetManager (
         //TODO getAllowedLocalityLevel
       }
 
+      /**为一个executor根据本地行分配task*/
       dequeueTask(execId,host,allowedLocality) match {
         case Some((index,taskLocality,speculative)) =>
           val task = tasks(index)
           val taskId = sched.newTaskId()
           copiesRunning(index) += 1
           val attemptNum = taskAttempts(index).size
+          /**将task 和executorId 组合成TaskInfo*/
           val info = new TaskInfo(taskId,index,attemptNum,curTime,execId,host,taskLocality,speculative)
           taskInfos(taskId) = info
           taskAttempts(index) = info :: taskAttempts(index)
           //TODO Update locality level
           val startTime = System.currentTimeMillis()
-//          val serializedTask:ByteBuffer=try{
-//
-//          }
+          val serializedTask:ByteBuffer=try{
+            Task.serializeWithDependencies(task,sched.sc.addedFiles,sched.sc.addedJars,ser)
+          }
       }
       }
 

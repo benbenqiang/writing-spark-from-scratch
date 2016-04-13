@@ -2,6 +2,7 @@ package org.scu.spark
 
 import akka.actor.ActorSystem
 import org.scu.spark.rpc.akka.{AkkaUtil, AkkaRpcEnv, RpcEnvConfig}
+import org.scu.spark.serializer.{JavaSerializer, Serializer}
 
 /**
  * 保存运行时对象，例如rpcEnv,bloclManager,output tracker等
@@ -9,7 +10,8 @@ import org.scu.spark.rpc.akka.{AkkaUtil, AkkaRpcEnv, RpcEnvConfig}
  */
 class SparkEnv (
                val executorId:String,
-               private[spark] val rpcEnv:AkkaRpcEnv
+               private[spark] val rpcEnv:AkkaRpcEnv,
+               val closureSerializer:Serializer
                  )extends Logging{
   private[spark] var isStopped = false
 
@@ -71,7 +73,9 @@ object SparkEnv extends Logging{
     val rpcConfig  = new RpcEnvConfig(actorSystemName,hostname,port)
     val actorSystem = AkkaUtil.doCreateActorSystem(rpcConfig)
     val rpcEnv = new AkkaRpcEnv(actorSystem)
-    val envInstance = new SparkEnv(executorId,rpcEnv)
+
+    val closureSerializer = new JavaSerializer(conf)
+    val envInstance = new SparkEnv(executorId,rpcEnv,closureSerializer)
     envInstance
   }
 

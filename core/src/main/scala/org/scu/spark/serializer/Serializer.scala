@@ -8,7 +8,16 @@ import scala.reflect.ClassTag
 /**
  * Created by bbq on 2016/4/12
  */
-class Serializer {
+abstract class Serializer {
+  /**Deserialization 的ClassLoader*/
+  protected var defaultClassLoader : Option[ClassLoader] = None
+
+  def setDefaultClassLoader(classLoader: ClassLoader) : Serializer = {
+    defaultClassLoader = Some(classLoader)
+    this
+  }
+
+  def newInstance():SerializerInstance
 
 }
 
