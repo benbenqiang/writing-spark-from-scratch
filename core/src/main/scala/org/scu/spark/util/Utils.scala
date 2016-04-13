@@ -1,6 +1,7 @@
 package org.scu.spark.util
 
-import java.io.File
+import java.io.{OutputStream, File}
+import java.nio.ByteBuffer
 import java.util.UUID
 
 import org.apache.commons.lang3.SystemUtils
@@ -70,6 +71,17 @@ private[spark] object Utils extends Logging{
     }catch {
       case NonFatal(t) =>
         logError(s"Uncaught exception in thread ${Thread.currentThread().getName}",t)
+    }
+  }
+
+  /**将ByteBuffer转化成byte数组，然后写入outputStream*/
+  def writeByteBuffer(bb:ByteBuffer,out:OutputStream):Unit = {
+    if(bb.hasArray){
+      out.write(bb.array(),bb.arrayOffset()+bb.position(),bb.remaining())
+    }else{
+      val bbval = new Array[Byte](bb.remaining())
+      bb.get(bbval)
+      out.write(bbval)
     }
   }
 
