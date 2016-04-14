@@ -54,6 +54,8 @@ private[spark] class TaskSchedulerImpl(
 
   val CPUS_PER_TASK=conf.getInt("spark.task.cpus",1)
 
+  var dagScheduler:DAGScheduler = null
+
   var _backend : SchedulerBackend = _
 
   var schedulableBuilder : SchedulableBuilder = null
@@ -93,6 +95,10 @@ private[spark] class TaskSchedulerImpl(
   override def defaultParallelism(): Int = ???
 
   override def canelTasks(stageId: Int, interruptThread: Boolean): Unit = ???
+
+  def taskSetFinished(manager:TaskSetManager)={
+    ???
+  }
 
   /**DAGScheduler 通过这个方法将taskSet交给TaskScheduler*/
   override def submitTasks(taskSet: TaskSet) = {
@@ -180,7 +186,7 @@ private[spark] class TaskSchedulerImpl(
     val availableCpus = shuffledOffers.map(_.cores).toArray
     val sortedTaskSets = rootPool.getSortedTaskSetQueue
     for(taskSet <- sortedTaskSets){
-      logDebug(s"parentName: ${taskSet.parent.name} ,name: ${taskSet.name} , runningTasks: ${taskSet.runingTasks}")
+      logDebug(s"parentName: ${taskSet.parent.name} ,name: ${taskSet.name} , runningTasks: ${taskSet.runningTasks}")
       if(newExecAvail){
         taskSet.executorAdded()
       }
@@ -233,5 +239,7 @@ private[spark] class TaskSchedulerImpl(
 
   override def executorHeartbeatReceived(execId: String, taskMetrics: Array[(Long, TaskMetrics)], blockManagerID: BlockManagerID): Boolean = ???
 
-  override def setDAGScheduler(dAGScheduler: DAGScheduler): Unit = ???
+  override def setDAGScheduler(dAGScheduler: DAGScheduler): Unit = {
+    this.dagScheduler = dagScheduler
+  }
 }

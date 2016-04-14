@@ -3,13 +3,14 @@ package org.scu.spark.scheduler
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentLinkedQueue
 
-import org.scu.spark.{SparkEnv, Logging}
+import org.scu.spark.{TaskNotSerializableException, SparkEnv, Logging}
 import org.scu.spark.scheduler.TaskLocality._
 import org.scu.spark.scheduler.cluster.TaskDescription
 
 import scala.collection.mutable
 import scala.collection.mutable._
 import scala.collection.mutable.ArrayBuffer
+import scala.util.control.NonFatal
 
 /**
  * Created by  bbq on 2015/12/14
@@ -45,9 +46,9 @@ private[spark] class TaskSetManager (
   //def schedulingMode:SchedulingMode
   override def weight: Int = ???
 
-  val runningTaskSet = new HashSet()
+  val runningTaskSet = new HashSet[Long]
 
-  override def runingTasks: Int = runningTaskSet.size
+  override def runningTasks: Int = runningTaskSet.size
 
   /**当这个标志是true时，不会再有新的task运行
     * 当把taskManager kill 掉，或者所有的任务已经完成了，那么就标记成true，用来保留历史运行记录
@@ -70,6 +71,9 @@ private[spark] class TaskSetManager (
   val taskInfos = new mutable.HashMap[Long,TaskInfo]()
 
   var myLocalityLevels = computeValidLocalityLevels()
+  
+  /**Task 序列化后大于10MB就报警，这个变量使报警仅出现一次*/
+  var emittedTaskSiezeWarning = false
 
   override def checkSpeculatableTasks(): Boolean = ???
 
@@ -238,27 +242,68 @@ private[spark] class TaskSetManager (
 
       /**为一个executor根据本地行分配task*/
       dequeueTask(execId,host,allowedLocality) match {
-        case Some((index,taskLocality,speculative)) =>
+        case Some((index, taskLocality, speculative)) =>
           val task = tasks(index)
           val taskId = sched.newTaskId()
           copiesRunning(index) += 1
           val attemptNum = taskAttempts(index).size
-          /**将task 和executorId 组合成TaskInfo*/
-          val info = new TaskInfo(taskId,index,attemptNum,curTime,execId,host,taskLocality,speculative)
+          /** 将task 和executorId 组合成TaskInfo */
+          val info = new TaskInfo(taskId, index, attemptNum, curTime, execId, host, taskLocality, speculative)
           taskInfos(taskId) = info
           taskAttempts(index) = info :: taskAttempts(index)
           //TODO Update locality level
           val startTime = System.currentTimeMillis()
-          val serializedTask:ByteBuffer=try{
-            Task.serializeWithDependencies(task,sched.sc.addedFiles,sched.sc.addedJars,ser)
+          val serializedTask: ByteBuffer = try {
+            Task.serializeWithDependencies(task, sched.sc.addedFiles, sched.sc.addedJars, ser)
+          } catch {
+            case NonFatal(e) =>
+              val msg = s"Failed to serialize task $taskId , not attempting to retry it "
+              abort(msg, Some(e))
+              logError(msg, e)
+              throw new TaskNotSerializableException(e)
           }
-      }
-      }
+          if (serializedTask.limit > TaskSetManager.TASK_SIZE_TO_WARN_KB * 1024 && !emittedTaskSiezeWarning) {
+            emittedTaskSiezeWarning = true
+            logWarning(s"Stage ${task.stageId} contains a task of very large size")
+          }
+          addRunningTask(taskId)
 
-    ???
+          val taskName = s"task ${info.id} in stage ${taskSet.id}"
+          logInfo(s"Starting $taskName (TID $taskId,$host,partition ${task.partitionId}" +
+            s"$taskLocality,${serializedTask.limit} bytes")
+
+          sched.dagScheduler.taskStarted(task, info)
+
+          return Some(new TaskDescription(taskId = taskId, attemptNumber = attemptNum, execId, taskName, index, serializedTask))
+        case _ =>
+      }
+      }
+    None
     }
 
   def executorAdded(): Unit ={
     ???
   }
+
+  private def maybeFinishTaskSet(): Unit ={
+    if(!isZombie && runningTasks  == 0 ){
+      sched.taskSetFinished(this)
+    }
+  }
+  
+  def abort(message:String,exception:Option[Throwable] = None ) : Unit = sched.synchronized{
+    sched.dagScheduler.taskSetFailed(taskSet,message,exception)
+    isZombie = true
+    
+  }
+  
+  def addRunningTask(tid:Long): Unit ={
+    if(runningTaskSet.add(tid) && parent != null){
+      parent.increaseRunningTask(1)
+    }
+  }
+}
+
+private[spark] object TaskSetManager{
+  val TASK_SIZE_TO_WARN_KB = 100
 }

@@ -41,7 +41,6 @@ private[spark] class Pool(
     }
   }
 
-  override def runingTasks: Int = ???
 
   override def addSchedulable(schedulable: Schedulable): Unit = ???
 
@@ -64,4 +63,11 @@ private[spark] class Pool(
   override def executorLost(executorId: String, host: String, reason: ExecutorLossReason): Unit = ???
 
   override def stageId: Int = ???
+
+  def increaseRunningTask(taskNum:Int): Unit ={
+    runningTasks += taskNum
+    if(parent != null){
+      parent.increaseRunningTask(taskNum)
+    }
+  }
 }

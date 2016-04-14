@@ -14,5 +14,5 @@ class TaskInfo (
                val taskLocality: TaskLocality.TaskLocality,
                val speculative:Boolean
                  ){
-
+  def id:String = s"$index.$attemptNumber"
 }

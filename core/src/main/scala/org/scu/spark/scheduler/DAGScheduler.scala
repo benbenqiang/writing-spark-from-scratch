@@ -52,6 +52,15 @@ private[spark] class DAGScheduler(
   private[scheduler] val eventProcessLoop = new DAGSchedulerEventProcessLoop(this)
 
 
+  /**以下几个方法都是用于被TaskSetManager 调用的*/
+  def taskStarted(task:Task[_],taskInfp:TaskInfo): Unit ={
+    ???
+  }
+
+  def taskSetFailed(taskSet:TaskSet,reason:String,exception:Option[Throwable])={
+
+  }
+
   private def updateJobIdStageIdMaps(jobId:Int,stage:Stage)={
     @tailrec
     def updateJobIdStageIdMapList(stages:List[Stage]):Unit ={
