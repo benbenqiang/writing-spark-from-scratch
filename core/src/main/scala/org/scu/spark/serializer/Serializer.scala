@@ -33,9 +33,16 @@ abstract class SerializerInstance{
   def deserializeStream(s:InputStream):DeserializationStream
 }
 
+/**
+ * 效果与 new ObjectOutputStream.writeObject 相同，
+ * 只是可以对写入的前后座更多的定制化，包括 wrtteKey writeValue
+ * 同时支持对迭代器的序列化
+ *
+ * */
 abstract class SerializationStream{
   def writeObject[T:ClassTag](t:T):SerializationStream
 
+  /**writeKey 和 writeValue实在unsafe中使用的*/
   def writeKey[T:ClassTag](key:T):SerializationStream = writeObject(key)
 
   def writeValue[T:ClassTag](value:T):SerializationStream = writeObject(value)

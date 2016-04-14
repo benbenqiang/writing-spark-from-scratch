@@ -24,7 +24,7 @@ private[spark] class TaskSetManager (
 
   private val EXECUOTR_TASK_BLACKLIST_TIMEOUT = conf.getLong("spark.scheduler.executorTaskBlacklistTime",0L)
   val env = SparkEnv.env
-
+  val ser = env.closureSerializer.newInstance()
 
   val tasks = taskSet.tasks
   val numTasks=tasks.length
