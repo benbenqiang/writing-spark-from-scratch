@@ -11,6 +11,7 @@ import org.scu.spark.scheduler.TaskLocality.TaskLocality
 import org.scu.spark.storage.BlockManagerID
 import org.scu.spark.{TaskNotSerializableException, Logging, SparkContext}
 
+import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
 import scala.util.Random
 
@@ -53,6 +54,10 @@ private[spark] class TaskSchedulerImpl(
   val STARVATION_TIMEOUT_MS = conf.getInt("spark.starvation.timeout",15000)
 
   val CPUS_PER_TASK=conf.getInt("spark.task.cpus",1)
+
+  private[scheduler] val taskIdToTaskSetManager = new HashMap[Long,TaskSetManager]
+  val taskIdToExecutorId = new HashMap[Long,String]
+
 
   var dagScheduler:DAGScheduler = null
 
@@ -148,15 +153,24 @@ private[spark] class TaskSchedulerImpl(
       if(availableCpus(i) >= CPUS_PER_TASK){
         try{
           for (task <- taskSet.resourceOffer(execId,host,maxLocality)){
-            tasks(i)
+            tasks(i) += task
+            val tid = task.taskId
+            taskIdToTaskSetManager(tid) = taskSet
+            taskIdToExecutorId(tid)=execId
+            executorIdToTaskCount(execId)+=1
+            executorsByHost(host) += execId
+            availableCpus(i) -= CPUS_PER_TASK
+            assert(availableCpus(i)>=0)
+            launchedTask = true
           }
         }catch{
           case e : TaskNotSerializableException =>
             logError(s"Resource offer failed,task set ${taskSet.name} was not ser")
+            return launchedTask
         }
       }
     }
-    return launchedTask
+    launchedTask
   }
 
   /**

@@ -223,7 +223,7 @@ private[spark] class TaskSetManager (
   }
 
   /**
-   *  给定一个executor Id ，为这个Exeucutor分配task
+   *  给定一个executor Id ，为这个Exeucutor分配task。并返回TaskDescription
     */
   def resourceOffer(
                      execId:String,
