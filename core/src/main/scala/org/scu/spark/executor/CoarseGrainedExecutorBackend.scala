@@ -9,6 +9,7 @@ import akka.util.Timeout
 import org.scu.spark.deploy.TaskState.TaskState
 import org.scu.spark.rpc.akka.{AkkaUtil, RpcEnvConfig, AkkaRpcEnv}
 import org.scu.spark.scheduler.cluster.CoarseGrainedClusterMessage._
+import org.scu.spark.scheduler.cluster.TaskDescription
 import org.scu.spark.util.{RpcUtils, ThreadUtils}
 import org.scu.spark.{SparkConf, Logging, SparkEnv}
 
@@ -32,6 +33,7 @@ private[spark] class CoarseGrainedExecutorBackend(
   var executor: Executor = null
   @volatile var driver: Option[ActorRef] = None
 
+  private[this] val ser = env.closureSerializer.newInstance()
 
   override def preStart(): Unit = {
     logInfo("Connecting to driver:"+ driverUrl)
@@ -61,6 +63,15 @@ private[spark] class CoarseGrainedExecutorBackend(
     case RegisteredExectutor(hostname)=>
       logInfo("Successfully registered with driver")
       executor = new Executor(executorId,hostname,env,userClassPath,isLocal = false)
+    case LaunchTask(data)=>
+      if(executor == null){
+        logError("Received LaunchTask command but executor was null")
+        System.exit(1)
+      }else{
+        val taskDesc = ser.deserialize[TaskDescription](data.value)
+        logInfo("Got assigned task"+taskDesc.taskId)
+        executor.launchTask(this,taskDesc.taskId,taskDesc.attemptNumber,taskDesc.name,taskDesc.serializedTask)
+      }
 
     case _ => logInfo("receive something")
   }
