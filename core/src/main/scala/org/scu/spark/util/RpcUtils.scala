@@ -13,4 +13,8 @@ private[spark] object RpcUtils {
     Timeout(durations seconds)
   }
 
+  def maxMessageSizeBytes(conf:SparkConf):Int={
+    val maxSizeInMB = conf.getInt("spark.rpc.message.maxSize",128)
+    maxSizeInMB * 1024 *1024
+  }
 }

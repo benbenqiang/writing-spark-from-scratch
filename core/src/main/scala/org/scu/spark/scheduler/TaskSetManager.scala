@@ -294,7 +294,7 @@ private[spark] class TaskSetManager (
   def abort(message:String,exception:Option[Throwable] = None ) : Unit = sched.synchronized{
     sched.dagScheduler.taskSetFailed(taskSet,message,exception)
     isZombie = true
-    
+    maybeFinishTaskSet()
   }
   
   def addRunningTask(tid:Long): Unit ={

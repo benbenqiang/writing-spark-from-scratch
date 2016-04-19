@@ -4,12 +4,13 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.{Actor, ActorRef, Props}
-import org.scu.spark.Logging
+import org.apache.spark.SparkEnv
+import org.scu.spark.{SparkEnv, Logging}
 import org.scu.spark.rpc.akka.{RpcAddress, AkkaUtil, AkkaRpcEnv}
 import org.scu.spark.scheduler.client.WorkerOffer
 import org.scu.spark.scheduler.cluster.CoarseGrainedClusterMessage._
 import org.scu.spark.scheduler.{SchedulerBackend, TaskSchedulerImpl}
-import org.scu.spark.util.{Utils, ThreadUtils}
+import org.scu.spark.util.{SerializableBuffer, RpcUtils, Utils, ThreadUtils}
 
 import scala.collection.mutable
 import scala.collection.mutable.HashMap
@@ -30,6 +31,7 @@ private[spark] class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
 
   val conf = scheduler.sc.conf
 
+  private val maxRpcMessageSize = RpcUtils.maxMessageSizeBytes(conf)
   /** dirver程序的RPC对象 */
   var driverEndPoint: ActorRef = _
 
@@ -62,6 +64,8 @@ private[spark] class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
 
 
   class DriverEndPoint(val rpcEnv: AkkaRpcEnv, sparkProperties: ArrayBuffer[(String, String)]) extends Actor with Logging {
+
+    private val ser = SparkEnv.env.closureSerializer.newInstance()
 
     protected val addressToExecutorId = new HashMap[RpcAddress,String]
 
@@ -125,7 +129,26 @@ private[spark] class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
     private def launchTasks(tasks :Seq[Seq[TaskDescription]]): Unit ={
       /**首先将task扁平化，task之间是可并行的没有依赖关系*/
       for (task <- tasks.flatten){
+        val serializedTask = ser.serialize(task)
+        if(serializedTask.limit >= maxRpcMessageSize){
+          scheduler.taskIdToTaskSetManager.get(task.taskId).foreach { taskSetMgr =>
+            try {
+              val msg = s"Serialized task ${task.taskId}:${task.index} was ${serializedTask.limit} bytes," +
+                s"witch exceeds max allowed spark.rpc.message.maxSize $maxRpcMessageSize"
+              taskSetMgr.abort(msg)
+            } catch{
+              case e:Exception=>logError("Exception in error callback",e)
+            }
+          }
+        }else{
+          val executorData = executorDataMap(task.executorId)
+          executorData.freeCores -= scheduler.CPUS_PER_TASK
 
+          logInfo(s"Launching task ${task.taskId} on executor id : ${task.executorId} hostname: "+
+              s"${executorData.executorHost}.")
+
+          executorData.executorEndpoint ! LaunchTask(new SerializableBuffer(serializedTask))
+        }
       }
     }
   }

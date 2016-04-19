@@ -4,6 +4,7 @@ import java.nio.ByteBuffer
 
 import akka.actor.ActorRef
 import org.scu.spark.deploy.TaskState.TaskState
+import org.scu.spark.util.SerializableBuffer
 
 /**
  * Created by bbq on 2016/1/15
@@ -15,7 +16,7 @@ private[spark] sealed trait CoarseGrainedClusterMessage extends Serializable
 private[spark] object CoarseGrainedClusterMessage {
 
   /** Driver节点发给Executor的消息 */
-  case class LaunchTask(data: ByteBuffer) extends CoarseGrainedClusterMessage
+  case class LaunchTask(data: SerializableBuffer) extends CoarseGrainedClusterMessage
 
   case class KillTask(taskId: Long, executor: String, interruptThread: Boolean) extends CoarseGrainedClusterMessage
 

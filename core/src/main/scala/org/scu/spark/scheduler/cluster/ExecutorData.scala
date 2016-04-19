@@ -10,7 +10,7 @@ private[cluster] class ExecutorData(
                                    val executorEndpoint:ActorRef,
                                    val executorAddress:RpcAddress,
                                    override val executorHost:String,
-                                   val freeCores:Int,
+                                   var freeCores:Int,
                                    override val totalCores:Int,
                                    override val logUrlMap:Map[String,String]
                                      ) extends ExecutorInfo(executorHost,totalCores,logUrlMap)
