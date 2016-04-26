@@ -24,7 +24,7 @@ class Executor(
   private val runningTasks = new ConcurrentHashMap[Long,TaskRunner]()
 
   /**用于任务提交的线程池，有无限容量*/
-//  private val threadPool = ThreadUtils.newDeamonCachedThreadPool
+  private val threadPool = ThreadUtils.newDeamonCachedThreadPool("Executor task launch worker")
 
   def launchTask(
                 context:ExecutorBackend,
@@ -34,7 +34,8 @@ class Executor(
                 serializedTask:ByteBuffer
                   ):Unit={
     val tr = new TaskRunner(context,taskId,attemptNumber,taskName,serializedTask)
-
+    runningTasks.put(taskId,tr)
+    threadPool.execute(tr)
   }
 
   /**运行task的主体*/

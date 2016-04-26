@@ -23,6 +23,12 @@ object ThreadUtils {
     new ThreadFactoryBuilder().setDaemon(true).setNameFormat(prefix+"-%d").build()
   }
 
+  /**为无限制大小的Cached线程池指定名称*/
+  def newDeamonCachedThreadPool(prefix:String):ThreadPoolExecutor ={
+    val threadFactory = namedThreadFactory(prefix)
+    Executors.newCachedThreadPool(threadFactory).asInstanceOf[ThreadPoolExecutor]
+  }
+
   /**
    * 固定大小的线程池.
    * 可以添加前缀，指定最大的线程数，可以设定core线程的存活时间，默认60s
