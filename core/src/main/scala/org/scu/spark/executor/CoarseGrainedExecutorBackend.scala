@@ -6,7 +6,7 @@ import java.nio.ByteBuffer
 import akka.actor.{Props, Actor, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
-import org.scu.spark.deploy.TaskState.TaskState
+import org.scu.spark.TaskState.TaskState
 import org.scu.spark.rpc.akka.{AkkaUtil, RpcEnvConfig, AkkaRpcEnv}
 import org.scu.spark.scheduler.cluster.CoarseGrainedClusterMessage._
 import org.scu.spark.scheduler.cluster.TaskDescription

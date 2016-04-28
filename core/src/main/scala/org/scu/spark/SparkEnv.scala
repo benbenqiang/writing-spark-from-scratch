@@ -11,7 +11,8 @@ import org.scu.spark.serializer.{JavaSerializer, Serializer}
 class SparkEnv (
                val executorId:String,
                private[spark] val rpcEnv:AkkaRpcEnv,
-               val closureSerializer:Serializer
+               val closureSerializer:Serializer,
+               val conf : SparkConf
                  )extends Logging{
   private[spark] var isStopped = false
 
@@ -75,7 +76,7 @@ object SparkEnv extends Logging{
     val rpcEnv = new AkkaRpcEnv(actorSystem)
 
     val closureSerializer = new JavaSerializer(conf)
-    val envInstance = new SparkEnv(executorId,rpcEnv,closureSerializer)
+    val envInstance = new SparkEnv(executorId,rpcEnv,closureSerializer,conf)
     envInstance
   }
 

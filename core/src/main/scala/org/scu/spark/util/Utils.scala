@@ -1,9 +1,11 @@
 package org.scu.spark.util
 
 import java.io.{IOException, OutputStream, File}
+import java.net.URI
 import java.nio.ByteBuffer
 import java.util.UUID
 
+import org.apache.commons.configuration.Configuration
 import org.apache.commons.lang3.SystemUtils
 import org.scu.spark.{Logging, SparkConf}
 
@@ -90,4 +92,30 @@ private[spark] object Utils extends Logging{
     System.getProperties.stringPropertyNames().asScala.map(key=>(key,System.getProperty(key))).toMap
   }
 
+  /**
+   * 从URI中获取文件的名称
+    **/
+  def decodeFileNameInURI(uri:URI):String={
+    val rawPath = uri.getRawPath
+    val rawFileName = rawPath.split("/").last
+    new URI("file:///"+rawFileName).getPath.substring(1)
+  }
+
+  /**将特定的文件或目录转移到sparkLocalDir中，供一个Executor的多个task使用。*/
+  def fetchFile(
+               url:String,
+               targetDir:File,
+               conf:SparkConf,
+               hadoopConf:Configuration,
+               timestamp:Long,
+               useCache:Boolean): Unit ={
+    val fileName = decodeFileNameInURI(new URI(url))
+    val targetFile = new File(targetDir,fileName)
+    val fetchCacheEnabled = conf.getBoolean("spark.files.useFetchCache",defaultValue = true)
+    if(useCache && fetchCacheEnabled){
+      ???
+    }else{
+      ???
+    }
+  }
 }

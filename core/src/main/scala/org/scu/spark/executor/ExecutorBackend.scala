@@ -2,7 +2,7 @@ package org.scu.spark.executor
 
 import java.nio.ByteBuffer
 
-import org.scu.spark.deploy.TaskState.TaskState
+import org.scu.spark.TaskState.TaskState
 
 /**
  * Created by bbq on 2016/1/13
