@@ -2,13 +2,31 @@ package org.scu.spark
 
 import java.util.concurrent.ConcurrentHashMap
 
+import org.scu.spark.util.Utils
+
 import scala.collection.JavaConverters._
 
 /**
  * Created by bbq on 2015/12/11
+ * @param loadDefauts 是否从Java Properties获取配置信息
  */
-class SparkConf extends Cloneable with Logging {
+class SparkConf(loadDefauts:Boolean) extends Cloneable with Logging {
+
+  def this() =  this(true)
+
   private val settings = new ConcurrentHashMap[String, String]()
+
+
+  if(loadDefauts){
+    loadFromSystemProperties(true)
+  }
+
+  private[spark] def loadFromSystemProperties(silent:Boolean) :SparkConf ={
+    for((key,value) <- Utils.getSystemProperties if key.startsWith("spark.")){
+      set(key,value)
+    }
+    this
+  }
 
   set("spark.driver.host", "127.0.0.1")
   set("spark.driver.port", "60010")
@@ -70,7 +88,7 @@ class SparkConf extends Cloneable with Logging {
   }
 
   override def clone: SparkConf = {
-    new SparkConf().setAll(getAll)
+    new SparkConf(false).setAll(getAll)
   }
 
   def contains(key: String): Boolean = settings.containsKey(key)

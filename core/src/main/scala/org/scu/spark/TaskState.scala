@@ -1,4 +1,4 @@
-package org.scu.spark.launcher
+package org.scu.spark
 
 /**
  * Created by bbq on 2016/4/28

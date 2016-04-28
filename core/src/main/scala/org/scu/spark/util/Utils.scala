@@ -8,7 +8,7 @@ import org.apache.commons.lang3.SystemUtils
 import org.scu.spark.{Logging, SparkConf}
 
 import scala.util.control.NonFatal
-
+import scala.collection.JavaConverters._
 /**
  * Created by bbq on 2015/12/23
  */
@@ -83,6 +83,11 @@ private[spark] object Utils extends Logging{
       bb.get(bbval)
       out.write(bbval)
     }
+  }
+
+  /**获取系统属性*/
+  def getSystemProperties:Map[String,String]={
+    System.getProperties.stringPropertyNames().asScala.map(key=>(key,System.getProperty(key))).toMap
   }
 
 }
