@@ -24,6 +24,16 @@ private[spark] abstract class Task[T](
                                      val partitionId:Int,
                                      internalAccumulators:Seq[Accumulator[Long]]
                                        ) extends Serializable{
+
+
+  final def run(
+               taskAttemptId:Long,
+               attemptNumber:Int
+               //TODO metricSystem
+                 ):T={
+    //blockManager registerTask
+    ???
+  }
 }
 
 private[spark] object Task{

@@ -84,7 +84,7 @@ class Executor(
       val ser = env.closureSerializer.newInstance()
       logInfo(s"Running $taskName (TID $taskId)")
       executorBackend.startsUpdate(taskId,TaskState.RUNNING,EMPTY_BYTE_BUFFER)
-      val taskStart : Long = 0
+      var taskStart : Long = 0
       startGCTime = computeTotalGCTime()
 
       try{
@@ -95,6 +95,25 @@ class Executor(
         //set TaskMemoryManeger
         if(killed)
           throw new TaskKilledException
+
+        //TODO MapOutputTracker
+
+        taskStart = System.currentTimeMillis()
+        var threwException = true
+        val value = try{
+          /**task开始运行*/
+          val res = task.run(taskId,attemptedNumber)
+          threwException = false
+          res
+        }finally {
+          //TODO 释放相关资源和内存
+
+          val taskFinish = System.currentTimeMillis()
+
+          /**对结果进行序列化*/
+
+        }
+
 
       }
     }

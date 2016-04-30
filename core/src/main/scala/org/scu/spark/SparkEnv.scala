@@ -75,6 +75,9 @@ object SparkEnv extends Logging{
     val actorSystem = AkkaUtil.doCreateActorSystem(rpcConfig)
     val rpcEnv = new AkkaRpcEnv(actorSystem)
 
+    def instantiateClassFromConf[T](propertyName:String,defaultClassName:String):T={
+      ???
+    }
     val closureSerializer = new JavaSerializer(conf)
     val envInstance = new SparkEnv(executorId,rpcEnv,closureSerializer,conf)
     envInstance
