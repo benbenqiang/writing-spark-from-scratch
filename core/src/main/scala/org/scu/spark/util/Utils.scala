@@ -118,4 +118,15 @@ private[spark] object Utils extends Logging{
       ???
     }
   }
+  /**获取装载spark的ClassLoader*/
+  def getSparkClassLoader:ClassLoader = getClass.getClassLoader
+
+  /**返回当前线程的ClassLoader或者返回装载spark的classLoader*/
+  def getContextOrSparkClassLoader:ClassLoader = Option(Thread.currentThread().getContextClassLoader).getOrElse(getSparkClassLoader)
+
+  /**根据类名获取该类的Class对象*/
+  def classForName[T](className:String):Class[_]={
+    Class.forName(className,true,getContextOrSparkClassLoader)
+  }
+
 }
