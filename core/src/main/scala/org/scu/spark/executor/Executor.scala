@@ -92,7 +92,9 @@ class Executor(
         val (taskFiles,taskJars,taskBytes) = Task.deserializeWithDependencies(serializedTask)
         updateDependencies(taskFiles,taskJars)
         task = ser.deserialize[Task[Any]](taskBytes,Thread.currentThread().getContextClassLoader)
-        //set TaskMemoryManeger
+        //TODO set TaskMemoryManeger
+
+        /**task被kill，抛出异常在catch中处理异常*/
         if(killed)
           throw new TaskKilledException
 
@@ -107,12 +109,24 @@ class Executor(
           res
         }finally {
           //TODO 释放相关资源和内存
-
-          val taskFinish = System.currentTimeMillis()
-
-          /**对结果进行序列化*/
-
         }
+        val taskFinish = System.currentTimeMillis()
+
+        /**task被kill，抛出异常在catch中处理异常*/
+        if(killed)
+          throw new TaskKilledException
+        /**对结果进行序列化*/
+
+        val resultSer = env.serializer.newInstance()
+        /**记录序列化前后的花费的时间*/
+        val beforeSerilization = System.currentTimeMillis()
+        val valueBytes = resultSer.serialize(value)
+        val afterSerialization = System.currentTimeMillis()
+
+
+        //TODO 记录一些序列化消耗，GC时间，任务运算消耗的时间
+
+
 
 
       }
