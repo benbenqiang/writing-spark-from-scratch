@@ -76,7 +76,10 @@ private[spark] class CoarseGrainedExecutorBackend(
     case _ => logInfo("receive something")
   }
 
-  override def startsUpdate(taskId: Long, state: TaskState, data: ByteBuffer): Unit = ???
+  /**ExecutorBackend将Executor 以及 Task的状态信息反馈给Driver*/
+  override def statusUpdate(taskId: Long, state: TaskState, data: ByteBuffer): Unit = {
+    val msg = StatusUpdate(executorId,taskId,state,data)
+  }
 }
 
 private[spark] object CoarseGrainedExecutorBackend extends Logging{

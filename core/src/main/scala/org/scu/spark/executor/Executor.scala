@@ -1,6 +1,5 @@
 package org.scu.spark.executor
 
-import java.io.File
 import java.lang.management.ManagementFactory
 import java.net.URL
 import java.nio.ByteBuffer
@@ -10,10 +9,10 @@ import java.util.concurrent.ConcurrentHashMap
 import org.scu.spark.deploy.SparkHadoopUtil
 
 import scala.collection.mutable
-import scala.collection.mutable._
+
 import scala.collection.JavaConverters._
 
-import org.scu.spark.scheduler.Task
+import org.scu.spark.scheduler.{IndirectTaskRsult, DirectTaskResult, Task}
 import org.scu.spark.util.{Utils, ThreadUtils}
 import org.scu.spark.{TaskKilledException, TaskState, Logging, SparkEnv}
 
@@ -34,6 +33,11 @@ class Executor(
   private val currentJars = new mutable.HashMap[String,Long]()
 
   private val EMPTY_BYTE_BUFFER = ByteBuffer.wrap(new Array[Byte](0))
+
+  /**task任务返回的大小，默认1GB*/
+  private val maxResultSize = Utils.getMaxResultSize(conf)
+  /**通过RPC直接发送给Dirver的大小，默认512MB*/
+  private val maxDireactResultSize = conf.getLong("spark.task.maxDirectResultSize",1) * 1024 * 1024 *512
 
   private val conf = env.conf
   /**当前正在运行的任务*/
@@ -83,7 +87,9 @@ class Executor(
       val deserializeStartTime = System.currentTimeMillis()
       val ser = env.closureSerializer.newInstance()
       logInfo(s"Running $taskName (TID $taskId)")
-      executorBackend.startsUpdate(taskId,TaskState.RUNNING,EMPTY_BYTE_BUFFER)
+
+      executorBackend.statusUpdate(taskId,TaskState.RUNNING,EMPTY_BYTE_BUFFER)
+
       var taskStart : Long = 0
       startGCTime = computeTotalGCTime()
 
@@ -126,16 +132,42 @@ class Executor(
 
         //TODO 记录一些序列化消耗，GC时间，任务运算消耗的时间
 
+        //TODO task collectAccumulator
 
+        /**对结果进行序列化，返回给driver,有两种方式，若数据量不是很大，则直接通过RPC传输给driver，若较大则保存在blockManager中*/
+        val directResult = new DirectTaskResult(valueBytes)
+        val serializedDireactResult = ser.serialize(directResult)
+        val resultSize = serializedDireactResult.limit()
 
+        val serializedResult : ByteBuffer = {
+          /**结果大于1G的task结果将会警告*/
+          if(maxResultSize > 0 && resultSize > maxResultSize){
+            logWarning(s"Finished $taskName (TID $taskId). Result is larger than maxResultSize. dropping it ")
+            //TODO use IndireactTaskResult
+            ser.serialize(new IndirectTaskRsult(resultSize))
+          }else if (resultSize > maxDireactResultSize){
+            //TODO add to BlockManager
+            logInfo(s"Finished $taskName (TID $taskId). $resultSize bytes sent via BlockManger")
+            ser.serialize(new IndirectTaskRsult(resultSize))
+          }else{
+            logInfo(s"Finished $taskName (TI $taskId). $taskId bytes result sent to driver")
+            serializedDireactResult
+          }
+        }
 
+        executorBackend.statusUpdate(taskId,TaskState.FINISHED,serializedResult)
+      } catch {
+         //TODO catch error reason and send back to drier
+        case _ =>
+      } finally {
+        runningTasks.remove(taskId)
       }
     }
 
     /**
      * 下载目前不存在的依赖和文件，同时添加新的jar到classloader中。
      * */
-    private def updateDependencies(newFile:HashMap[String,Long],newJars:HashMap[String,Long]): Unit ={
+    private def updateDependencies(newFile:mutable.HashMap[String,Long],newJars:mutable.HashMap[String,Long]): Unit ={
       lazy val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
       synchronized{
         /**有更新的jar包或者文件版本才进行更新*/

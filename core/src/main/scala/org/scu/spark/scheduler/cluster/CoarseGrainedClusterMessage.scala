@@ -3,7 +3,8 @@ package org.scu.spark.scheduler.cluster
 import java.nio.ByteBuffer
 
 import akka.actor.ActorRef
-import org.scu.spark.deploy.TaskState.TaskState
+import org.scu.spark.TaskState.TaskState
+
 import org.scu.spark.util.SerializableBuffer
 
 /**

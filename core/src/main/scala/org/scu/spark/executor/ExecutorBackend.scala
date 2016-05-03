@@ -8,5 +8,5 @@ import org.scu.spark.TaskState.TaskState
  * Created by bbq on 2016/1/13
  */
 private[spark] trait ExecutorBackend {
-  def startsUpdate(taskId:Long,state:TaskState,data:ByteBuffer)
+  def statusUpdate(taskId:Long,state:TaskState,data:ByteBuffer)
 }
