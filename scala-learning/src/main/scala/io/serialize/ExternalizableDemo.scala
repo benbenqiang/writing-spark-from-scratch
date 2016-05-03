@@ -11,12 +11,12 @@ import java.io._
  */
 object ExternalizableDemo {
   def main(args: Array[String]) {
-    val isSeri = false
+    val isSeri = true
     val fileSep = File.separator
     val file = new File(s"scala-learning${fileSep}src${fileSep}main${fileSep}resources${fileSep}ExternalizableDemo.data")
     if(isSeri){
       val a = new A()
-      val b = new B()
+      val b = new B("a")
       val oos = new ObjectOutputStream(new FileOutputStream(file))
       println("序列化对象")
       A.english = 100
@@ -49,8 +49,12 @@ object A  {
   }
 }
 
-class B extends Externalizable{
+class B(name:String) extends Externalizable{
   println("B的构造函数")
+
+  /**external需要一个无参的构造函数，若不加这个则会报 no valid constructor异常 */
+  def this() = this("default")
+
   override def readExternal(in: ObjectInput): Unit = {
     println("read External")
   }
