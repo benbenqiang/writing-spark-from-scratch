@@ -1,6 +1,6 @@
 package org.scu.spark.util
 
-import java.io.{IOException, OutputStream, File}
+import java.io.{DataOutput, IOException, OutputStream, File}
 import java.net.URI
 import java.nio.ByteBuffer
 import java.util.UUID
@@ -86,6 +86,16 @@ private[spark] object Utils extends Logging{
       out.write(bbval)
     }
   }
+  /**将ByteBuffer转化成byte数组，然后写入DataOutput*/
+  def writeByteBuffer(bb:ByteBuffer,out:DataOutput):Unit = {
+    if(bb.hasArray){
+      out.write(bb.array(),bb.arrayOffset()+bb.position(),bb.remaining())
+    }else{
+      val bbval = new Array[Byte](bb.remaining())
+      bb.get(bbval)
+      out.write(bbval)
+    }
+  }
 
   /**获取系统属性*/
   def getSystemProperties:Map[String,String]={
@@ -127,6 +137,11 @@ private[spark] object Utils extends Logging{
   /**根据类名获取该类的Class对象*/
   def classForName[T](className:String):Class[_]={
     Class.forName(className,true,getContextOrSparkClassLoader)
+  }
+
+  /**返回Task任务数据的最大值 1GB 以字节为单位*/
+  def getMaxResultSize(conf:SparkConf):Long = {
+    conf.get("spark.dirver.maxResultSize","1").toLong * 1024 *1024 * 1024
   }
 
 }
