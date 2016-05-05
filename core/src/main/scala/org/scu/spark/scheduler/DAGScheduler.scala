@@ -393,6 +393,7 @@ private[spark] class DAGScheduler(
 
     stage.pendingPartitons.clear()
 
+    /**返回那些partition需要计算，因为stage因失败而重新提交，所以Stage会记录每个task的运行结果，如果某个task已经运行成功过，就不需要再重算了，结果已经被保存在MapStatus中了*/
     val partitionsToCompute: Seq[Int] = stage.findMissingPartitions()
 
     /**
@@ -402,7 +403,7 @@ private[spark] class DAGScheduler(
       stage.resetInternalAccumulators()
     }
 
-    /** 任务的属性，调度池，任务组，任务描述等 */
+    /** 每一个stage都属于一个Job，该方法返回Job的属性，调度池，任务组，任务描述等 */
     val properties = jobIdToActiveJob(jobId).properties
 
     runningStages += stage
