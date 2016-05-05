@@ -1,6 +1,6 @@
 package typeSystem
 
-import scala.reflect.ClassTag
+import scala.reflect._
 
 /**
  * 与类型系统相关的知识。
@@ -16,7 +16,7 @@ import scala.reflect.ClassTag
  */
 object typeSystemDemo {
   class A
-
+  class B extends A
   /**获取Class信息的方式，以及两种的区别*/
   def getClassDemo(): Unit={
     val a = new A
@@ -38,11 +38,16 @@ object typeSystemDemo {
 
   /**Array在初始化的时候需要类信息*/
   //def mkArray[T](elems:T*) = Array(elems:_*)
-  /**ClassTag[T]保存了被泛型擦除后的原始类型T,提供给运行时的。*/
+  /**ClassTag[T]保存了被泛型擦除后的原始类型T,提供给运行时。*/
   def mkArray[T:ClassTag](elems:T*) = Array(elems:_*)
 
-  def main(args: Array[String]) {
+  /**ClassTag保留了类型擦除后的Class信息*/
+  def getInfoFromClassTag[T:ClassTag](value:T) ={
+    println(classOf[A].isAssignableFrom(classTag[T].runtimeClass))
+  }
 
+  def main(args: Array[String]) {
+    getInfoFromClassTag(new B)
   }
 }
 
