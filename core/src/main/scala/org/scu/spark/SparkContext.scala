@@ -4,13 +4,15 @@ import java.util.Properties
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.apache.commons.lang3.SerializationUtils
+import org.scu.spark.broadcast.Broadcast
 import org.scu.spark.rdd.{ParallelCollectionRDD, RDD}
 import org.scu.spark.rpc.akka.RpcAddress
 import org.scu.spark.scheduler.cluster.SparkDeploySchedulerBackend
 import org.scu.spark.scheduler.{DAGScheduler, SchedulerBackend, TaskScheduler, TaskSchedulerImpl}
+import org.scu.spark.util.Utils
 
 import scala.collection.mutable
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag,classTag}
 
 /**
  * 1.spark的主要入口。spark用于连接集群，获取Executor资源。
@@ -29,6 +31,8 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
   private[spark] def conf: SparkConf = _conf
 
   def getConf: SparkConf = conf.clone
+
+  def isLocal:Boolean = Utils.isLocalMaster(conf)
 
   private[spark] def env: SparkEnv = _env
 
@@ -143,6 +147,16 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
     dagScheduler.runJob(rdd, func, partitions, resultHandler, localProperties.get())
   }
 
+  /**生成一个只读的广播变量*/
+  def broadcast[T:ClassTag](value:T):Broadcast[T] ={
+    //TODO asssertNotStopped
+    require(classOf[RDD[_]].isAssignableFrom(classTag[T].runtimeClass),
+      "can not directly broadcast RDDs; instead, collect and broacast the result")
+    val bc = env.broadcastManager.newBroadcast[T](value,isLocal)
+    //TODO callsite
+    //TODO cleaner
+    bc
+  }
 
 }
 

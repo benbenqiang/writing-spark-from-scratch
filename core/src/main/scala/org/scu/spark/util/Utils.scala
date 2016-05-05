@@ -144,4 +144,9 @@ private[spark] object Utils extends Logging{
     conf.get("spark.dirver.maxResultSize","1").toLong * 1024 *1024 * 1024
   }
 
+  /**是否单机模式*/
+  def isLocalMaster(conf:SparkConf):Boolean = {
+    val master = conf.get("spark.master","local")
+    master.startsWith("local")
+  }
 }

@@ -1,6 +1,7 @@
 package org.scu.spark
 
 import akka.actor.ActorSystem
+import org.scu.spark.broadcast.BroadcastManager
 import org.scu.spark.rpc.akka.{AkkaUtil, AkkaRpcEnv, RpcEnvConfig}
 import org.scu.spark.serializer.{JavaSerializer, Serializer}
 import org.scu.spark.util.Utils
@@ -14,6 +15,7 @@ class SparkEnv (
                private[spark] val rpcEnv:AkkaRpcEnv,
                val serializer: Serializer,
                val closureSerializer:Serializer,
+               val broadcastManager : BroadcastManager,
                val conf : SparkConf
                  )extends Logging{
   private[spark] var isStopped = false
@@ -102,7 +104,10 @@ object SparkEnv extends Logging{
     val serializer = instantiateClassFromConf[Serializer]("spark.serializer","org.apache.spark.serializer.JavaSerializer")
 
     val closureSerializer = new JavaSerializer(conf)
-    val envInstance = new SparkEnv(executorId,rpcEnv,serializer,closureSerializer,conf)
+
+    val broadcastManager = new BroadcastManager(isDriver,conf)
+
+    val envInstance = new SparkEnv(executorId,rpcEnv,serializer,closureSerializer,broadcastManager,conf)
     envInstance
   }
 
