@@ -1,11 +1,13 @@
 package org.scu.spark.scheduler
 
+import java.io.NotSerializableException
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.remote.FailureDetector.Clock
+import org.scu.spark.util.JavaUtils
 import org.apache.commons.lang3.SerializationUtils
 import org.scu.spark._
+import org.scu.spark.broadcast.Broadcast
 import org.scu.spark.rdd.RDD
 
 import scala.annotation.tailrec
@@ -50,7 +52,8 @@ private[spark] class DAGScheduler(
   private val cacheLocs = new mutable.HashMap[Int, IndexedSeq[Seq[TaskLocation]]]
 
   private[scheduler] val eventProcessLoop = new DAGSchedulerEventProcessLoop(this)
-
+  /**用于对task的序列化*/
+  private val closureSerializer = SparkEnv.env.closureSerializer.newInstance()
 
   /**以下几个方法都是用于被TaskSetManager 调用的*/
   def taskStarted(task:Task[_],taskInfp:TaskInfo): Unit ={
@@ -436,7 +439,26 @@ private[spark] class DAGScheduler(
      * 将task序列化后广播出去，分发给每个executor，每个executor反序列化
      * 后得到任务。
      */
-    //TODO taskBinaryBytes
+    var taskBinary:Broadcast[Array[Byte]] = null
+    try{
+      val taskBinaryBytes : Array[Byte] = stage match {
+          /**如果是shufflestage,则保存stage的最后一个rdd,和stage的依赖*/
+        case stage : ShuffleMapStage =>
+          JavaUtils.bufferToArray(closureSerializer.serialize(stage.id,stage.shuffleDep))
+        case stage : ResultStage =>
+          JavaUtils.bufferToArray(closureSerializer.serialize((stage.rdd,stage.func)))
+      }
+      taskBinary = sc.broadcast(taskBinaryBytes)
+    } catch {
+      case e : NotSerializableException =>
+        //TODO abortstage
+        runningStages -= stage
+        return
+      case NonFatal(e) =>
+        //TODO abortsatge
+        runningStages -= stage
+        return
+    }
 
     /**
      * 根据stage生成需要计算的tasks
@@ -447,7 +469,7 @@ private[spark] class DAGScheduler(
           partitionsToCompute.map { id =>
             val locs = taskIdToLocation(id)
             val part = stage.rdd.partitions(id)
-            new ShuffleMapTask(stage.id, stage.latestInfo.attempteId, part,
+            new ShuffleMapTask(stage.id, stage.latestInfo.attempteId,taskBinary, part,
               locs, stage.internalAccumulators)
           }
         case stage: ResultStage =>
@@ -455,14 +477,15 @@ private[spark] class DAGScheduler(
             val p = stage.partitions(id)
             val part = stage.rdd.partitions(p)
             val locs = taskIdToLocation(id)
-            new ResultTask(stage.id, stage.latestInfo.attempteId, part,
+            new ResultTask(stage.id, stage.latestInfo.attempteId,taskBinary, part,
               locs, id, stage.internalAccumulators)
           }
       }
     } catch {
       case NonFatal(e) =>
         //TODO abortStage
-        ???
+        runningStages -= stage
+        return
     }
 
     /** 向taskScheduler提交任务 ，至此，DAGScheduler已经完成了他的使命*/

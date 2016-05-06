@@ -1,5 +1,6 @@
 package org.scu.spark.scheduler
 
+import org.scu.spark.broadcast.Broadcast
 import org.scu.spark.{Accumulator, Logging, Partition}
 
 /**
@@ -9,7 +10,7 @@ import org.scu.spark.{Accumulator, Logging, Partition}
 private[spark] class ShuffleMapTask(
                                      stageId: Int,
                                      stageAttemptId: Int,
-                                     //TODO taskBinary
+                                     taskBianry:Broadcast[Array[Byte]],
                                      partition: Partition,
                                      @transient private var _locs: Seq[TaskLocation],
                                      internalAccumulators: Seq[Accumulator[Long]]

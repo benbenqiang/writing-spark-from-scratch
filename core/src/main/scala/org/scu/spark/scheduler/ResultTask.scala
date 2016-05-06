@@ -1,5 +1,6 @@
 package org.scu.spark.scheduler
 
+import org.scu.spark.broadcast.Broadcast
 import org.scu.spark.{Accumulator, Partition}
 
 /**
@@ -10,7 +11,7 @@ import org.scu.spark.{Accumulator, Partition}
 private[spark] class ResultTask[T,U](
                                     stageId:Int,
                                     stageAttemptId:Int,
-                                    //TODO taskBinary
+                                    taskBianry:Broadcast[Array[Byte]],
                                     partition:Partition,
                                     locs:Seq[TaskLocation],
                                     val outputId : Int,
