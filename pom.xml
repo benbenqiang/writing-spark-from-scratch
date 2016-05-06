@@ -12,6 +12,7 @@
         <module>core</module>
         <module>akka-learning</module>
         <module>scala-learning</module>
+        <module>common/network-common</module>
     </modules>
 
     <dependencies>
