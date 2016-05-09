@@ -5,7 +5,7 @@ import org.scu.spark.broadcast.BroadcastManager
 import org.scu.spark.deploy.master.Master
 import org.scu.spark.rpc.akka.{AkkaUtil, AkkaRpcEnv, RpcEnvConfig}
 import org.scu.spark.serializer.{JavaSerializer, Serializer}
-import org.scu.spark.storage.{BlockManagerMasterEndpoint, BlockManagerMaster}
+import org.scu.spark.storage.{BlockManager, BlockManagerMasterEndpoint, BlockManagerMaster}
 import org.scu.spark.util.{RpcUtils, Utils}
 
 /**
@@ -18,6 +18,7 @@ class SparkEnv (
                val serializer: Serializer,
                val closureSerializer:Serializer,
                val broadcastManager : BroadcastManager,
+               val blockManager:BlockManager,
                val conf : SparkConf
                  )extends Logging{
   private[spark] var isStopped = false
@@ -122,9 +123,14 @@ object SparkEnv extends Logging{
       }
     }
 
-    val blockManagerMaster = new BlockManagerMaster(registerOrLoopupEndpoint(BlockManagerMaster.DRIVER_ENDPOINT_NAME,new BlockManagerMasterEndpoint(rpcEnv,isLocal,conf)),conf,isDriver)
+    val blockManagerMaster = new BlockManagerMaster(
+      registerOrLoopupEndpoint(BlockManagerMaster.DRIVER_ENDPOINT_NAME,new BlockManagerMasterEndpoint(rpcEnv,isLocal,conf))
+      ,conf,isDriver)
 
-    val envInstance = new SparkEnv(executorId,rpcEnv,serializer,closureSerializer,broadcastManager,conf)
+    val blockManager = new BlockManager(executorId,rpcEnv,blockManagerMaster,conf,numUsableCores)
+
+
+    val envInstance = new SparkEnv(executorId,rpcEnv,serializer,closureSerializer,broadcastManager,blockManager,conf)
     envInstance
   }
 
