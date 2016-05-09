@@ -29,7 +29,7 @@ class SparkConf(loadDefauts:Boolean) extends Cloneable with Logging {
   }
 
   set("spark.driver.host", "127.0.0.1")
-  set("spark.driver.port", "60010")
+  set("spark.driver.port", "7077")
   set("spark.master.host", "127.0.0.1")
   set("spark.master.port", "60000")
   set("spark.app.name", "defaultAppName")

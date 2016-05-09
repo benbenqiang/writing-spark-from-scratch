@@ -81,11 +81,11 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
   }
 
   private[spark] def createSparkEnv(
-                                   conf:SparkConf
-                                   //TODO isLocal
+                                   conf:SparkConf,
+                                   isLocal:Boolean
                                    //TODO listerBus
                                      ):SparkEnv={
-    SparkEnv.createDriverEnv(conf,2)
+    SparkEnv.createDriverEnv(conf,isLocal,2)
   }
 
   private[spark] def executorMemory:Int= _executorMemoy
@@ -94,7 +94,7 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
    * ***重要：系统初始化全部代码：建立DAGScheduler，TaskScheduler等
    */
   _conf = sparkConf.clone
-  _env = createSparkEnv(conf)
+  _env = createSparkEnv(conf,isLocal)
   SparkEnv.env = _env
 
   _executorMemoy = _conf.getInt("spark.executor.memory")

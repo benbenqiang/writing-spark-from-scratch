@@ -112,7 +112,7 @@ private[spark] object CoarseGrainedExecutorBackend extends Logging{
       driverConf.set(key,value)
     }
 
-    val env = SparkEnv.createExecutorEnv(driverConf,executorId,hostname,port,cores)
+    val env = SparkEnv.createExecutorEnv(driverConf,executorId,hostname,port,cores,isLocal = false)
 
     val sparkHostPort = hostname + ":" + port
     env.rpcEnv.doCreateActor(Props(classOf[CoarseGrainedExecutorBackend],env.rpcEnv,driverUrl,executorId,sparkHostPort,cores,userClassPath,env),"Executor")

@@ -1,10 +1,12 @@
 package org.scu.spark
 
-import akka.actor.ActorSystem
+import akka.actor.{Actor, Props, ActorRef, ActorSystem}
 import org.scu.spark.broadcast.BroadcastManager
+import org.scu.spark.deploy.master.Master
 import org.scu.spark.rpc.akka.{AkkaUtil, AkkaRpcEnv, RpcEnvConfig}
 import org.scu.spark.serializer.{JavaSerializer, Serializer}
-import org.scu.spark.util.Utils
+import org.scu.spark.storage.{BlockManagerMasterEndpoint, BlockManagerMaster}
+import org.scu.spark.util.{RpcUtils, Utils}
 
 /**
  * 保存运行时对象，例如rpcEnv,bloclManager,output tracker等
@@ -44,11 +46,12 @@ object SparkEnv extends Logging{
    */
   private[spark] def createDriverEnv(
                                     conf:SparkConf,
+                                    isLocal:Boolean,
                                     numCores:Int
                                       ): SparkEnv ={
     val hostname = conf.get("spark.driver.host")
     val port = conf.getInt("spark.driver.port")
-    create(conf,SparkContext.DRIVER_IDENTIFIER,hostname,port,isDriver = true,numCores)
+    create(conf,SparkContext.DRIVER_IDENTIFIER,hostname,port,isDriver = true,isLocal,numCores)
   }
 
   /**
@@ -59,9 +62,10 @@ object SparkEnv extends Logging{
                                       executorId:String,
                                       hostname:String,
                                       port:Int,
-                                      numCores:Int
+                                      numCores:Int,
+                                      isLocal:Boolean
                                         ):SparkEnv={
-    val env = create(conf,executorId,hostname,port,isDriver = false,numCores)
+    val env = create(conf,executorId,hostname,port,isDriver = false,isLocal,numCores)
     SparkEnv._env = env
     env
   }
@@ -72,6 +76,7 @@ object SparkEnv extends Logging{
                      hostname:String,
                      port:Int,
                      isDriver:Boolean,
+                     isLocal:Boolean,
                      numUsableCores:Int
                        ):SparkEnv={
     val actorSystemName = if (isDriver) driverActorSystemName else executorActorSystemName
@@ -106,6 +111,18 @@ object SparkEnv extends Logging{
     val closureSerializer = new JavaSerializer(conf)
 
     val broadcastManager = new BroadcastManager(isDriver,conf)
+
+    /**如果是driver端的sparkEnv实例化，那么创建对象，如果是executor的就用远程连接*/
+    def registerOrLoopupEndpoint(name:String,endpointCreator: => Actor):ActorRef={
+      if(isDriver){
+        logInfo("Create Actor : "+ name)
+        rpcEnv.doCreateActor(Props(endpointCreator),name)
+      } else {
+        RpcUtils.makeDriverRef(name,conf,rpcEnv)
+      }
+    }
+
+    val blockManagerMaster = new BlockManagerMaster(registerOrLoopupEndpoint(BlockManagerMaster.DRIVER_ENDPOINT_NAME,new BlockManagerMasterEndpoint(rpcEnv,isLocal,conf)),conf,isDriver)
 
     val envInstance = new SparkEnv(executorId,rpcEnv,serializer,closureSerializer,broadcastManager,conf)
     envInstance
