@@ -6,9 +6,9 @@ import java.nio.ByteBuffer
 /**
  * NIO 属于同步非阻塞，使用selector进行轮训
  * 同步阻塞：传统JAVA stream io
- * 同步非阻塞：NIO，io操作不阻塞，但是获取io数据需要查询，因此是同步
- * 异步阻塞：io操作还是会阻塞一个线程，但是可以通过futhure的方式获取数据
- * 异步非阻塞：发起io操作，通过回掉获取数据
+ * 同步非阻塞：io一定会返回，不会阻塞，但是不一定会取到结果。需要不断的去取结果
+ * 异步阻塞：NIO，在selector上调用select是会阻塞的，结果通过事件驱动的方式返回
+ * 异步非阻塞：发起io操作不阻塞，通过回调函数获取数据触发相应操作
  * Created by bbq on 2016/1/21
  */
 object NIOByteBufferDemo {
