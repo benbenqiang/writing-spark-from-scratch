@@ -39,6 +39,9 @@ private case class SerializedMemoryEntry[T](
 
 
 
+/**
+ * 暂时不考虑内存放不下的情况
+ * */
 private[spark] class MemoryStore(
                                 conf:SparkConf,
                                 blockInfoManager:BlockInfoManager
@@ -50,7 +53,24 @@ private[spark] class MemoryStore(
   /**！！对于非序列化的on-heap都是存储在entires中！！*/
   private val entries = new util.LinkedHashMap[BlockId,MemoryEntry[_]](32,0.75f,true)
 
+  /**先不考虑内存放不下的情况*/
+  private[storage] def putIteratorAsValue[T](
+                                            blockId:BlockId,
+                                            values:Iterator[T],
+                                            classTag:ClassTag[T]
+                                              ): Long = {
+    require(!contains(blockId),s"Block $BlockId is already present in the MemoryStore")
 
+    val arrayValue = values.toArray
+    /**估计大小，直接存入*/
+    //TODO 估计大小
+    val entry = new DeserializedMemoryEntry[T](arrayValue,1000,classTag)
+    entry.size
+  }
+
+  def contains(blockId: BlockId) : Boolean = {
+    entries.synchronized { entries.containsKey(blockId)}
+  }
 }
 
 /**当MemoryStorre.putIteratorAsValues的时候返回的*/
