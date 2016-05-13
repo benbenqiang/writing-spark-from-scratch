@@ -23,6 +23,8 @@ private[spark] class BlockManager(
 
   private[storage] val blockInfoManager = new BlockInfoManager
 
+  var blockManagerId : BlockManagerId = _
+
   /**每个blockId对应一个Blcokinfo*/
   private[storage] val blockInfo = new ConcurrentHashMap[BlockId,BlockInfo]
 
@@ -93,6 +95,7 @@ private[spark] class BlockManager(
         if (tellMaster) {
           reportBlockStatus(blockId,info,putBlockStatus)
         }
+        logDebug("Put block %s locally took %s".format(blockId,System.currentTimeMillis() - startTime))
       }
 
 
@@ -136,7 +139,8 @@ private[spark] class BlockManager(
                                status: BlockStatus,
                                droppedMemroySize:Long=0L
                                  )={
-
+    val needReregister = !tryToReprotBlockStatus(blockId,info,status,droppedMemroySize)
+    //TODO Reregister
   }
 
   private def tryToReprotBlockStatus(
@@ -149,9 +153,10 @@ private[spark] class BlockManager(
       val storageLevel = status.storageLevel
       val inMemSize = Math.max(status.memSize, droppedMemroySize)
       val onDiskSize = status.diskSize
-      master
+      master.updateBlockInf(blockManagerId,blockId,storageLevel,inMemSize,onDiskSize)
+    }else{
+      true
     }
-    ???
   }
 
   /**返回对应BlockId的存储状态，BlockInfo中的Storagelevel是理论上的存储策略，而BlockStatus中的是实际存储情况*/

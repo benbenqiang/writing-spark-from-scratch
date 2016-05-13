@@ -8,7 +8,7 @@ import org.scu.spark.rdd.SparkException
 import org.scu.spark.scheduler.client.WorkerOffer
 import org.scu.spark.scheduler.cluster.TaskDescription
 import org.scu.spark.scheduler.TaskLocality.TaskLocality
-import org.scu.spark.storage.BlockManagerID
+import org.scu.spark.storage.BlockManagerId
 import org.scu.spark.{TaskNotSerializableException, Logging, SparkContext}
 
 import scala.collection.mutable
@@ -219,7 +219,7 @@ private[spark] class TaskSchedulerImpl(
     }
 
     /**如果tasks为空，说明没有申请到资源*/
-    if(tasks.size>0){
+    if(tasks.nonEmpty){
       hasLaunchedTask = true
     }
     return tasks
@@ -251,7 +251,7 @@ private[spark] class TaskSchedulerImpl(
   }
   override def executorLost(executorId: String, reason: String): Unit = ???
 
-  override def executorHeartbeatReceived(execId: String, taskMetrics: Array[(Long, TaskMetrics)], blockManagerID: BlockManagerID): Boolean = ???
+  override def executorHeartbeatReceived(execId: String, taskMetrics: Array[(Long, TaskMetrics)], blockManagerID: BlockManagerId): Boolean = ???
 
   override def setDAGScheduler(dAGScheduler: DAGScheduler): Unit = {
     this.dagScheduler = dagScheduler

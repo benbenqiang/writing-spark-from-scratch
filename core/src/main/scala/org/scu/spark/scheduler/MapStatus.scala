@@ -1,6 +1,6 @@
 package org.scu.spark.scheduler
 
-import org.scu.spark.storage.BlockManagerID
+import org.scu.spark.storage.BlockManagerId
 
 /**
  * shuffleMap任务的运行状态反馈：包括BlockManagerID和map的输出数据
@@ -8,7 +8,7 @@ import org.scu.spark.storage.BlockManagerID
  */
 private[spark] sealed trait MapStatus {
   /**当前任务运行的BlockManager*/
-  def location :BlockManagerID
+  def location :BlockManagerId
 
   /**
    * 估计reduce任务的大小，如果为空那么reduce就不会来fetch

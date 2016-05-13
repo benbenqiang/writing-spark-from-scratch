@@ -1,7 +1,7 @@
 package org.scu.spark.scheduler
 
 import org.scu.spark.executor.TaskMetrics
-import org.scu.spark.storage.BlockManagerID
+import org.scu.spark.storage.BlockManagerId
 
 /**
  * 可拔插式的Task Schedulers，从DAGScheduler获取一系列Tasks，并且将他们交给cluster执行
@@ -33,7 +33,7 @@ private[spark] trait TaskScheduler {
    * 更新executor传播来的metrics，并且查看是否blockManager是否存活。
    * driver如果返回true，说明blockmanager已注册，如果false，则需要re-register
    */
-  def executorHeartbeatReceived(execId:String,taskMetrics:Array[(Long,TaskMetrics)],blockManagerID: BlockManagerID):Boolean
+  def executorHeartbeatReceived(execId:String,taskMetrics:Array[(Long,TaskMetrics)],blockManagerID: BlockManagerId):Boolean
 
   def applicationId():String = appId
 
