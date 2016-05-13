@@ -1,6 +1,9 @@
 package org.scu.spark.storage
 
 import java.io.{ObjectInput, ObjectOutput, Externalizable}
+import java.util.concurrent.ConcurrentHashMap
+
+import scala.collection.immutable.HashSet
 
 /**
  * block data 存储策略.
@@ -99,5 +102,21 @@ object StorageLevel {
   val MEMORY_AND_DISK_SER_2 = new StorageLevel(true, true, false, false, 2)
   val OFF_HEAP = new StorageLevel(true, true, true, false, 1)
 
+  def apply(
+           useDisk:Boolean,
+           useMemory:Boolean,
+           useOffHeap:Boolean,
+           deserialized:Boolean,
+           replication:Int
+             ) : StorageLevel ={
+    getCachedStrageLevel(new StorageLevel(useDisk, useMemory, useOffHeap, deserialized, replication))
+  }
 
+  /**缓存当前出现过的storageLevel防止重读的创建节省内存*/
+  private[spark] val storageLevelCache = new ConcurrentHashMap[StorageLevel,StorageLevel]()
+
+  private[spark] def getCachedStrageLevel(level:StorageLevel):StorageLevel ={
+    storageLevelCache.putIfAbsent(level,level)
+    storageLevelCache.get(level)
+  }
 }
