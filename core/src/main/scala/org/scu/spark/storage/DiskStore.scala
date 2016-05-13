@@ -11,5 +11,13 @@ private[spark] class DiskStore(conf:SparkConf,diskManager:DiskBlockManager)exten
   private val minMemoryMapBytes = conf.getInt("spark.storage.memoryMapThreshold",2*1024*1024)
 
 
+  def contains(blockId:BlockId):Boolean = {
+    //TODO
+    false
+  }
 
+  def getSize(blockId:BlockId) : Long = {
+  //TODO
+  0L
+  }
 }

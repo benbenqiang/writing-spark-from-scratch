@@ -71,7 +71,13 @@ private[spark] class MemoryStore(
   def contains(blockId: BlockId) : Boolean = {
     entries.synchronized { entries.containsKey(blockId)}
   }
-}
+  
+  def getSize(blockId:BlockId):Long={
+    entries.synchronized{
+      entries.get(blockId).size
+    }
+  }
+} 
 
 /**当MemoryStorre.putIteratorAsValues的时候返回的*/
 
