@@ -16,3 +16,8 @@ private[spark] class BlockManagerMasterEndpoint(
                                                    ) extends  Actor with  Logging{
   override def receive: Receive = ???
 }
+
+/**Block缓存的状态*/
+case class BlockStatus(storageLevel: StorageLevel,memSize:Long,diskSize:Long){
+  def isCached:Boolean = memSize + diskSize > 0
+}

@@ -78,10 +78,24 @@ private[spark] class BlockManager(
         //TODO 暂时不考虑当内存放不下了
         /**将block的数据放在内存中*/
         size = memoryStore.putIteratorAsValue(blockId,iterator(),classTag)
+        if(tellMaster){
+
+        }
       }else{
         //TODO 将数据存入磁盘
         logError("还没有实现将数据存入磁盘，只支持内存")
       }
+
+      val putBlockStatus = getCurrentBlockStatus(blockId,info)
+      val blockWasSuccessfullyStored = putBlockStatus.storageLevel.isValid
+      if (blockWasSuccessfullyStored) {
+        info.size = size
+        if (tellMaster) {
+          reportBlockStatus(blockId,info,putBlockStatus)
+        }
+      }
+
+
       None
     }}
   }
@@ -108,8 +122,57 @@ private[spark] class BlockManager(
         newInfo
       }
     }
+
+    //TODO 根据storageLevel 存储，当前只存内存
     /**存储BlockId*/
     val result = putBody(putBlockInfo)
     result
   }
+
+  /**向master汇报当前block的存储状态。*/
+  private def reportBlockStatus(
+                               blockId: BlockId,
+                               info: BlockInfo,
+                               status: BlockStatus,
+                               droppedMemroySize:Long=0L
+                                 )={
+
+  }
+
+  private def tryToReprotBlockStatus(
+                                    blockId: BlockId,
+                                    info: BlockInfo,
+                                    status: BlockStatus,
+                                    droppedMemroySize:Long=0L
+                                      ) : Boolean = {
+    if(info.tellMaster) {
+      val storageLevel = status.storageLevel
+      val inMemSize = Math.max(status.memSize, droppedMemroySize)
+      val onDiskSize = status.diskSize
+      master
+    }
+    ???
+  }
+
+  /**返回对应BlockId的存储状态，BlockInfo中的Storagelevel是理论上的存储策略，而BlockStatus中的是实际存储情况*/
+  private def getCurrentBlockStatus(blockId:BlockId,info: BlockInfo) : BlockStatus ={
+    info.synchronized{
+      info.level match {
+        case null =>
+          BlockStatus(StorageLevel.NONE,0L,0L)
+        case level =>
+          val inMem = level.useMemory && memoryStore.contains(blockId)
+          val onDisk = level.useDisk && diskStore.contains(blockId)
+          /**只有内存才能不序列化*/
+          val deserialized = if(inMem) level.deserialized else false
+          val replication = if (inMem || onDisk) level.replication else 1
+          val storageLevel = StorageLevel(onDisk,inMem,level.useOffHeap,deserialized,replication)
+          val memSize = if(inMem) memoryStore.getSize(blockId) else 0L
+          val diskSize = if(onDisk) diskStore.getSize(blockId) else 0L
+          BlockStatus(storageLevel,memSize,diskSize)
+      }
+    }
+  }
+
+
 }
