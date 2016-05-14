@@ -14,7 +14,7 @@ class BlockManagerMaster(
                         conf:SparkConf,
                         isDriver:Boolean
                           ) extends  Logging{
-  def updateBlockInf(
+  def updateBlockInfo(
                       blockManagerId:BlockManagerId,
                       blockId:BlockId,
                       storageLevel: StorageLevel,

@@ -80,9 +80,6 @@ private[spark] class BlockManager(
         //TODO 暂时不考虑当内存放不下了
         /**将block的数据放在内存中*/
         size = memoryStore.putIteratorAsValue(blockId,iterator(),classTag)
-        if(tellMaster){
-
-        }
       }else{
         //TODO 将数据存入磁盘
         logError("还没有实现将数据存入磁盘，只支持内存")
@@ -153,7 +150,7 @@ private[spark] class BlockManager(
       val storageLevel = status.storageLevel
       val inMemSize = Math.max(status.memSize, droppedMemroySize)
       val onDiskSize = status.diskSize
-      master.updateBlockInf(blockManagerId,blockId,storageLevel,inMemSize,onDiskSize)
+      master.updateBlockInfo(blockManagerId,blockId,storageLevel,inMemSize,onDiskSize)
     }else{
       true
     }

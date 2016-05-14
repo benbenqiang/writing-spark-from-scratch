@@ -1,7 +1,6 @@
 package org.scu.spark.storage
 
 import akka.actor.Actor
-import akka.actor.Actor.Receive
 import org.scu.spark.{Logging, SparkConf}
 import org.scu.spark.rpc.akka.AkkaRpcEnv
 
