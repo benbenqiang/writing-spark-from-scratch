@@ -3,6 +3,8 @@ package org.scu.spark.storage
 import java.io.{ObjectInput, ObjectOutput, Externalizable}
 import java.util.concurrent.ConcurrentHashMap
 
+import org.scu.spark.SparkContext
+
 /**
  * 唯一代表一个BlockManager
  * Created by bbq on 2015/11/26
@@ -12,8 +14,20 @@ class BlockManagerId private (
                       private var host_ : String,
                       private var port_ : Int
                       ) extends Externalizable{
-  
-  
+  def executorId :String = executorID_
+
+  def isDriver : Boolean = {
+    executorId == SparkContext.DRIVER_IDENTIFIER
+  }
+
+  def hostPort : String = {
+    assert( port > 0 )
+    host + ":" + port
+  }
+
+  def port :Int = port_
+
+  def host : String = host_
 
   override def readExternal(in: ObjectInput): Unit = {
 

@@ -149,4 +149,8 @@ private[spark] object Utils extends Logging{
     val master = conf.get("spark.master","local")
     master.startsWith("local")
   }
+
+  def bytesToString(size:Long) : String ={
+???
+  }
 }
