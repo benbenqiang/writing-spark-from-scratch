@@ -8,6 +8,10 @@ sealed abstract class BlockId {
 
   def name:String
 
+  def isRDD : Boolean = isInstanceOf[RDDBlockId]
+  def isShuffle:Boolean = isInstanceOf[ShuffleBlockId]
+  def isBroadcast:Boolean = isInstanceOf[BroadcastBlockId]
+
   override def hashCode(): Int = name.hashCode
   override def equals(other: scala.Any): Boolean = other match {
     case o:BlockId => this.getClass == o.getClass && name.equals(o.name)
