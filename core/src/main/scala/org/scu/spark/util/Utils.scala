@@ -150,7 +150,21 @@ private[spark] object Utils extends Logging{
     master.startsWith("local")
   }
 
+  /**将字节单位的大小转换为KB，MB，GB*/
   def bytesToString(size:Long) : String ={
-???
+    val KB = 1L << 10
+    val MB = KB << 10
+    val GB = MB << 10
+    val TB = GB << 10
+
+    val (value,unit) = size match {
+      case _ if size >= TB => (size.toDouble / TB,"TB")
+      case _ if size >= GB => (size.toDouble / GB,"GB")
+      case _ if size >= MB => (size.toDouble / MB,"MB")
+      case _ if size >= KB => (size.toDouble / KB,"KB")
+      case _ => (size.toDouble,"B")
+    }
+    "%.1f %s".format(value,unit)
   }
 }
+
