@@ -26,16 +26,18 @@ private[spark] class TorrentBroadcast[T:ClassTag](obj:T,id:Long) extends Broadca
 
   private val broadcasId = BroadcastBlockId(id)
 
+  private val numBlocks : Int = writeBlocks(obj)
 
   private def writeBlocks(value:T):Int={
     import StorageLevel._
     val blockManager = SparkEnv.env.blockManager
-    /**在本地存一份*/
-    if(!blockManager.putSingle(broadcasId,value,MEMORY_ONLY,false)){
+    /**当前只存一份*/
+    if(!blockManager.putSingle(broadcasId,value,MEMORY_ONLY,tellMaster = true)){
       throw new SparkException(s"Failed to stroe $broadcasId in BlockManager")
     }
 
-    ???
+    /**返回数据被切割成block的个数，因为这里目前不考虑数据分片，直接将数据存入内存并通知blockManagerMaster*/
+    1
 
   }
 

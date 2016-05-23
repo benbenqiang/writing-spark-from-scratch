@@ -9,6 +9,7 @@ import org.apache.commons.lang3.SerializationUtils
 import org.scu.spark._
 import org.scu.spark.broadcast.Broadcast
 import org.scu.spark.rdd.RDD
+import org.scu.spark.storage.StorageLevel
 
 import scala.annotation.tailrec
 import scala.collection.mutable
