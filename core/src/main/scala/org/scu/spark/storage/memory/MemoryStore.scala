@@ -61,6 +61,7 @@ private[spark] class MemoryStore(
                                               ): Long = {
     require(!contains(blockId),s"Block $BlockId is already present in the MemoryStore")
 
+    implicit val tag = classTag
     val arrayValue = values.toArray
     /**估计大小，直接存入*/
     //TODO 估计大小

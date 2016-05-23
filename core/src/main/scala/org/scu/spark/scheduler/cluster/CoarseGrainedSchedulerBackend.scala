@@ -4,7 +4,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.{Actor, ActorRef, Props}
-import org.apache.spark.SparkEnv
 import org.scu.spark.{SparkEnv, Logging}
 import org.scu.spark.rpc.akka.{RpcAddress, AkkaUtil, AkkaRpcEnv}
 import org.scu.spark.scheduler.client.WorkerOffer

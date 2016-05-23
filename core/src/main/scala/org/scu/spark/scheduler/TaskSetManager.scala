@@ -77,7 +77,7 @@ private[spark] class TaskSetManager (
 
   override def checkSpeculatableTasks(): Boolean = ???
 
-  override var name: String = "TaskSet_"+taskSet.stageId.toString
+  override def name: String = "TaskSet_"+taskSet.stageId.toString
 
   override def removeSchedulable(schedulable: Schedulable): Unit = ???
 

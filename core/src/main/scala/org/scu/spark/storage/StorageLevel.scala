@@ -19,12 +19,12 @@ class StorageLevel private(
                             private var _deserialized : Boolean,
                             private var _replication : Int =1) extends Externalizable{
 
-  private def this(flags:Int,replication:Int=1)={
+  private def this(flags:Int,replication:Int)={
     this((flags & 8 ) != 0,(flags & 4) != 0,(flags & 2) != 0,(flags & 1 ) != 0,replication)
   }
 
   /**默认策略，只使用内存*/
-  def this() = this(4)
+  def this() = this(4,1)
 
   def useDisk : Boolean = _useDisk
   def useMemory : Boolean = _useMemory

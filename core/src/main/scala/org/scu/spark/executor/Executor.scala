@@ -158,7 +158,7 @@ class Executor(
         executorBackend.statusUpdate(taskId,TaskState.FINISHED,serializedResult)
       } catch {
          //TODO catch error reason and send back to drier
-        case _ =>
+        case _ : Throwable=>
       } finally {
         runningTasks.remove(taskId)
       }

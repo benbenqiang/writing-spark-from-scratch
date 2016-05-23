@@ -90,7 +90,7 @@ object SparkEnv extends Logging{
       val cls = Utils.classForName(className)
       /**先寻找有没有以SparkConf 和 isDriver为参数的狗仔函数，如果没有，就寻找仅以sparkConf的，在没有就调用无参构造函数*/
       try{
-        cls.getConstructor(classOf[SparkConf],Boolean.getClass).newInstance(conf,isDriver).asInstanceOf[T]
+        cls.getConstructor(classOf[SparkConf],classOf[Boolean]).newInstance(conf, new java.lang.Boolean(isDriver)).asInstanceOf[T]
       }catch{
         case _ : NoSuchMethodException =>
           try{
