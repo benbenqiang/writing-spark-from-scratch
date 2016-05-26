@@ -1,6 +1,7 @@
 package org.scu.spark.rdd
 
 import org.scu.spark._
+import org.scu.spark.storage.StorageLevel
 
 /**
  * 弹性分布式数据集，RDD的五个主要特性：

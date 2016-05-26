@@ -17,6 +17,8 @@ private[spark] class BroadcastManager(
   private var initialized = false
   private var broadcastFactory : BroadcastFactory = null
 
+  initialize()
+
   /**初始化BroadcastFactory,现在只有TorrentBroadcast*/
   private def initialize(): Unit ={
     synchronized{
@@ -27,6 +29,7 @@ private[spark] class BroadcastManager(
       }
     }
   }
+
 
   def stop(): Unit = {
     broadcastFactory.stop()

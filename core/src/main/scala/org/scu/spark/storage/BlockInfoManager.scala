@@ -45,7 +45,7 @@ private[storage] class BlockInfo(
     assert(_readerCount ==0 || _writeTask == BlockInfo.NO_WRITER)
   }
 
-  checkInvariants()
+  //checkInvariants()
 }
 
 private[storage] object BlockInfo{

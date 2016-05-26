@@ -150,7 +150,7 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
   /**生成一个只读的广播变量*/
   def broadcast[T:ClassTag](value:T):Broadcast[T] ={
     //TODO asssertNotStopped
-    require(classOf[RDD[_]].isAssignableFrom(classTag[T].runtimeClass),
+    require(!classOf[RDD[_]].isAssignableFrom(classTag[T].runtimeClass),
       "can not directly broadcast RDDs; instead, collect and broacast the result")
     val bc = env.broadcastManager.newBroadcast[T](value,isLocal)
     //TODO callsite
@@ -174,14 +174,28 @@ object SparkContext {
   private[spark] val DRIVER_IDENTIFIER = "driver"
 
   def main(args: Array[String]): Unit = {
+    testBroadCast
+  }
+
+  /**测试RDD的创建，转化和计算*/
+  def testRDDCreatAndAction={
     println(System.getProperty("java.io.tmpdir"))
     val conf = new SparkConf()
-    conf.set("spark.executor.port","7656")
+    conf.set("spark.executor.port","60001")
     val sc = new SparkContext(conf)
     val array: Array[Int] = Array(1, 2, 3, 4, 6, 7, 8, 9, 10)
     val a: ParallelCollectionRDD[Int] = sc.parallelize(array, 10)
     a.map(_ * 2)
     println(a.count())
     Thread.sleep(1000000)
+  }
+
+  /**测试广播变量*/
+  def testBroadCast={
+    val conf = new SparkConf()
+    conf.set("spark.executor.port","60001")
+    val sc = new SparkContext(conf)
+    val array: Array[Int] = Array(1, 2, 3, 4, 6, 7, 8, 9, 10)
+    val bc = sc.broadcast(array)
   }
 }

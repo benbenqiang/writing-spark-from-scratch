@@ -9,10 +9,10 @@
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
-        <module>core</module>
         <module>akka-learning</module>
         <module>scala-learning</module>
         <module>common/network-common</module>
+        <module>core</module>
     </modules>
 
     <dependencies>

@@ -194,10 +194,13 @@ object Worker extends Logging {
   val ACTOR_NAME = "Worker"
 
   def main(args: Array[String]) {
-    val rpcConfig = new RpcEnvConfig(SYSTEM_NAME, "127.0.0.1", 60002)
-    val masterRpcAddress = RpcAddress("127.0.0.1", 60000)
-    val rpcEnv = new AkkaRpcEnv(AkkaUtil.doCreateActorSystem(rpcConfig))
     val conf = new SparkConf()
+    val masterHost = conf.get("spark.master.host")
+    val masterPort = conf.getInt("spark.master.port")
+
+    val rpcConfig = new RpcEnvConfig(SYSTEM_NAME, "127.0.0.1", 60002)
+    val masterRpcAddress = RpcAddress(masterHost, masterPort)
+    val rpcEnv = new AkkaRpcEnv(AkkaUtil.doCreateActorSystem(rpcConfig))
     val actorRef = rpcEnv.doCreateActor(Props(classOf[Worker], rpcEnv, 200, 102400, masterRpcAddress, SYSTEM_NAME, ACTOR_NAME, null, conf), ACTOR_NAME)
   }
 }

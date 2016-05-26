@@ -107,7 +107,7 @@ object SparkEnv extends Logging{
       instantiateClass[T](conf.get(propertyName,defaultClassName))
     }
 
-    val serializer = instantiateClassFromConf[Serializer]("spark.serializer","org.apache.spark.serializer.JavaSerializer")
+    val serializer = instantiateClassFromConf[Serializer]("spark.serializer","org.scu.spark.serializer.JavaSerializer")
 
     val closureSerializer = new JavaSerializer(conf)
 
