@@ -1,0 +1,16 @@
+'当我们通过sc.broadcast一个数据时，所经历的流程'
+@startuml
+SparkContext -> TorrentBroadcast : new
+TorrentBroadcast --> BlockManager: putSingle(value)
+note left : 将数据存放到BM中
+
+BlockManager -> MemoryStore : putIteratorAsValue(value)
+note left : 数据真正存储在MemoryStore中
+BlockManager <-- MemoryStore : sizes of value
+
+BlockManager -> BlockManagerMaster: send UpdateBlockInfo
+BlockManager <-- BlockManagerMaster: true
+TorrentBroadcast <-- BlockManager:
+
+SparkContext <-- TorrentBroadcast : broadcast instance
+@enduml
