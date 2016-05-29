@@ -90,6 +90,9 @@ private[deploy] class Master(
       //TODO PersisteneEngine 用于容灾恢复
       sender() ! RegisteredApplication(app.id,self)
       schedule()
+
+    case x: Any =>
+      logError("no receive defined! "+ x + "from: "+ sender())
   }
 /**
    *  调度当前可用的资源。当新添加一个app或者资源变化时调用该方法

@@ -34,12 +34,13 @@ class Executor(
 
   private val EMPTY_BYTE_BUFFER = ByteBuffer.wrap(new Array[Byte](0))
 
+  private val conf = env.conf
+
   /**task任务返回的大小，默认1GB*/
   private val maxResultSize = Utils.getMaxResultSize(conf)
   /**通过RPC直接发送给Dirver的大小，默认512MB*/
   private val maxDireactResultSize = conf.getLong("spark.task.maxDirectResultSize",1) * 1024 * 1024 *512
 
-  private val conf = env.conf
   /**当前正在运行的任务*/
   private val runningTasks = new ConcurrentHashMap[Long,TaskRunner]()
 

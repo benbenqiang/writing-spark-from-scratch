@@ -33,6 +33,13 @@ private[spark] class BlockManager(
   val diskBlockManager = new DiskBlockManager(conf,false)
   private[spark] val diskStore = new DiskStore(conf,diskBlockManager)
 
+  /**
+    * 之所以没有写在构造函数里是因为，在创建SparkEnv的时候还不知道appiD
+    * */
+  def initialize(appId:String) : Unit = {
+    blockManagerId = BlockManagerId(executorId,"",0)
+  }
+
   /**存储一个对象到BlockManager中
     * @return 成功返回true，失败或者已经存储过返回false
     * */

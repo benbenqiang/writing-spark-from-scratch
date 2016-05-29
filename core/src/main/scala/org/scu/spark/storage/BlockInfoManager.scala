@@ -19,7 +19,7 @@ private[storage] class BlockInfo(
   def size : Long = _size
   def size_=(s:Long) = {
     _size = s
-    checkInvariants()
+//    checkInvariants()
   }
 
   /**当读block被锁住的次数*/

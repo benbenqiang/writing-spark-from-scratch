@@ -124,8 +124,8 @@ class Worker(
         master.get ! ExecutorStateChanged(appId,execId,manager.state,None,None)
 
       }
-    case _ =>
-      logError("no receive defined!")
+    case x: Any =>
+      logError("no receive defined! "+ x + " from: "+ sender())
   }
 
   /**
@@ -198,7 +198,7 @@ object Worker extends Logging {
     val masterHost = conf.get("spark.master.host")
     val masterPort = conf.getInt("spark.master.port")
 
-    val rpcConfig = new RpcEnvConfig(SYSTEM_NAME, "127.0.0.1", 60002)
+    val rpcConfig = new RpcEnvConfig(SYSTEM_NAME, "127.0.0.1", 7078)
     val masterRpcAddress = RpcAddress(masterHost, masterPort)
     val rpcEnv = new AkkaRpcEnv(AkkaUtil.doCreateActorSystem(rpcConfig))
     val actorRef = rpcEnv.doCreateActor(Props(classOf[Worker], rpcEnv, 200, 102400, masterRpcAddress, SYSTEM_NAME, ACTOR_NAME, null, conf), ACTOR_NAME)

@@ -141,7 +141,7 @@ private[spark] object Utils extends Logging{
 
   /**返回Task任务数据的最大值 1GB 以字节为单位*/
   def getMaxResultSize(conf:SparkConf):Long = {
-    conf.get("spark.dirver.maxResultSize","1").toLong * 1024 *1024 * 1024
+    conf.getLong("spark.dirver.maxResultSize",1) * 1024 *1024 * 1024
   }
 
   /**是否单机模式*/

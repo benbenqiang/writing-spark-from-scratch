@@ -66,6 +66,11 @@ private[spark] class MemoryStore(
     /**估计大小，直接存入*/
     //TODO 估计大小
     val entry = new DeserializedMemoryEntry[T](arrayValue,1000,classTag)
+
+    entries.synchronized{
+      entries.put(blockId,entry)
+    }
+
     entry.size
   }
 

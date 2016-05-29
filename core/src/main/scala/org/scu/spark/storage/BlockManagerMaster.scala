@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import org.scu.spark.storage.BlockManagerMessage.UpdateBlockInfo
 import org.scu.spark.{Logging, SparkConf}
 import akka.pattern.ask
+import org.scu.spark.rpc.akka.AkkaRpcEnv
 import org.scu.spark.util.RpcUtils
 /**
  * driver和executor都有一个Master，该类主要是对BlockManagerMasterEndPoint的操作进行包装
@@ -21,7 +22,7 @@ class BlockManagerMaster(
                       memSize:Long,
                       diskSize:Long):Boolean = {
     implicit val timeout = RpcUtils.askRpcTimeout(conf)
-    val res = driverEndpoint.?(UpdateBlockInfo(blockManagerId,blockId,storageLevel,memSize,diskSize)).asInstanceOf[Boolean]
+    val res = AkkaRpcEnv.askSyn[Boolean](driverEndpoint,UpdateBlockInfo(blockManagerId,blockId,storageLevel,memSize,diskSize),conf)
     logDebug(s"Updated info of block $blockId")
     res
   }

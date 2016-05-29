@@ -43,6 +43,7 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
   private var _schedulerBackend : SchedulerBackend = _
   private var _taskScheduler : TaskScheduler = _
   private var _executorMemoy :Int = _
+  private var _applicationId: String = _
 
   /**传给Env的参数*/
   private[spark] val executorEnvs = mutable.HashMap[String,String]()
@@ -105,7 +106,9 @@ class SparkContext(sparkConf: SparkConf) extends Logging {
   _dagScheduler = new DAGScheduler(this)
 
   _taskScheduler.start()
+  _applicationId = _taskScheduler.applicationId()
 
+  _env.blockManager.initialize(_applicationId)
 
 
   /**

@@ -35,10 +35,10 @@ private[spark] class TorrentBroadcast[T:ClassTag](obj:T,id:Long) extends Broadca
     if(!blockManager.putSingle(broadcasId,value,MEMORY_ONLY,tellMaster = true)){
       throw new SparkException(s"Failed to stroe $broadcasId in BlockManager")
     }
+    logDebug("Successfully put value into broadcast")
 
     /**返回数据被切割成block的个数，因为这里目前不考虑数据分片，直接将数据存入内存并通知blockManagerMaster*/
     1
-
   }
 
 }

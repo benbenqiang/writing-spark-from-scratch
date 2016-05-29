@@ -26,10 +26,7 @@ class AkkaRpcEnv(private[spark] val actorSystem: ActorSystem) extends Logging {
     RpcAddress(defaultAddress.host.get,defaultAddress.port.get)
   }
 
-  /**
-   * 远程连接的timeout
-   */
-  val defaultLookupTimeout = FiniteDuration(10, SECONDS)
+
 
   /**
    * 创建actor,并将创建的actor添加到map中
@@ -45,7 +42,7 @@ class AkkaRpcEnv(private[spark] val actorSystem: ActorSystem) extends Logging {
    */
   def setupEndpointRef(systemName: String, rpcAddress: RpcAddress, actorName: String): ActorRef = {
     val uri = AkkaUtil.generateRpcAddress(systemName, rpcAddress, actorName)
-    val ref = Await.result(asyncSetupEndpointRefByURI(uri), defaultLookupTimeout)
+    val ref = Await.result(asyncSetupEndpointRefByURI(uri), AkkaRpcEnv.defaultLookupTimeout)
     logInfo("successful created remote actor ref:" + ref)
     ref
   }
@@ -54,7 +51,7 @@ class AkkaRpcEnv(private[spark] val actorSystem: ActorSystem) extends Logging {
    * 同步连接远程Actor by url
    */
   def setupEndpointRefByURI(uri:String):ActorRef={
-    val ref = Await.result(asyncSetupEndpointRefByURI(uri),defaultLookupTimeout)
+    val ref = Await.result(asyncSetupEndpointRefByURI(uri),AkkaRpcEnv.defaultLookupTimeout)
     logInfo("successful created remote actor ref:" + ref)
     ref
   }
@@ -62,17 +59,26 @@ class AkkaRpcEnv(private[spark] val actorSystem: ActorSystem) extends Logging {
    * 异步请求远程actor
    */
   def asyncSetupEndpointRefByURI(uri: String): Future[ActorRef] = {
-    val ref = actorSystem.actorSelection(uri).resolveOne(defaultLookupTimeout)
+    val ref = actorSystem.actorSelection(uri).resolveOne(AkkaRpcEnv.defaultLookupTimeout)
     logInfo("successful created remote actor ref:" + ref)
     ref
   }
 
+
+}
+
+object AkkaRpcEnv extends  Logging{
+  /**
+    * 远程连接的timeout
+    */
+  val defaultLookupTimeout = FiniteDuration(10, SECONDS)
+
+  /**同步请求远程对象*/
   def askSyn[T:ClassTag](actroRef:ActorRef,message:Any,conf:SparkConf):T = {
     implicit val timeout = RpcUtils.askRpcTimeout(conf)
     val ref = Await.result(actroRef.ask(message),defaultLookupTimeout).asInstanceOf[T]
-    logInfo("successful created remote actor ref:" + ref)
+    logInfo("successful get remote " +ref.getClass.getName +" object:" + ref)
     ref
   }
-
 }
 
