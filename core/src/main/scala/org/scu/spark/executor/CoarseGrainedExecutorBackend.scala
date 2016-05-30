@@ -73,6 +73,14 @@ private[spark] class CoarseGrainedExecutorBackend(
         executor.launchTask(this,taskDesc.taskId,taskDesc.attemptNumber,taskDesc.name,taskDesc.serializedTask)
       }
 
+    case KillTask(taskId,executorId,interruptThread) =>
+      if (executor == null){
+        logError("Received KillTask command but executor was null")
+        System.exit(1)
+      } else {
+        executor.killTask(taskId,interruptThread)
+      }
+
     case x: Any =>
       logError("no receive defined! "+ x + "from: "+ sender())
   }

@@ -52,7 +52,7 @@ private[spark] class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
         properties += ((key, value))
       }
     }
-    rpcEnv.doCreateActor(Props(new DriverEndPoint( rpcEnv, properties)), CoarseGrainedSchedulerBackend.ENDPOINT_NAME)
+    driverEndPoint = rpcEnv.doCreateActor(Props(new DriverEndPoint( rpcEnv, properties)), CoarseGrainedSchedulerBackend.ENDPOINT_NAME)
   }
 
   override def stop(): Unit = ???
@@ -61,6 +61,9 @@ private[spark] class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
 
   override def reviveOffers(): Unit = ???
 
+  override def killTask(taskId:Long,executorId:String,interruptThread:Boolean): Unit = {
+    driverEndPoint ! KillTask(taskId,executorId,interruptThread)
+  }
 
   class DriverEndPoint(val rpcEnv: AkkaRpcEnv, sparkProperties: ArrayBuffer[(String, String)]) extends Actor with Logging {
 
@@ -107,6 +110,12 @@ private[spark] class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
 
       case ReviveOffers =>
         makeOffers()
+
+      case KillTask(taskId,executorId,interruptThread) =>
+        executorDataMap.get(executorId) match {
+          case Some(executorData) => executorData.executorEndpoint ! KillTask(taskId,executorId,interruptThread)
+          case None => logWarning(s"Attempted to kill task $taskId for unknown executor $executorId. ")
+        }
 
     }
 

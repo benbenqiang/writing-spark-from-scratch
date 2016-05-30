@@ -177,7 +177,7 @@ object SparkContext {
   private[spark] val DRIVER_IDENTIFIER = "driver"
 
   def main(args: Array[String]): Unit = {
-    testBroadCast
+    testRDDCreatAndAction
   }
 
   /**测试RDD的创建，转化和计算*/

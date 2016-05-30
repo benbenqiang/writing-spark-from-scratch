@@ -8,7 +8,7 @@ import org.scu.spark.util.JavaUtils
 import org.apache.commons.lang3.SerializationUtils
 import org.scu.spark._
 import org.scu.spark.broadcast.Broadcast
-import org.scu.spark.rdd.RDD
+import org.scu.spark.rdd.{RDD, SparkException}
 import org.scu.spark.storage.StorageLevel
 
 import scala.annotation.tailrec
@@ -452,11 +452,11 @@ private[spark] class DAGScheduler(
       taskBinary = sc.broadcast(taskBinaryBytes)
     } catch {
       case e : NotSerializableException =>
-        //TODO abortstage
+        abortStage(stage,"Task not serializable " + e.toString,Some(e))
         runningStages -= stage
         return
       case NonFatal(e) =>
-        //TODO abortsatge
+        abortStage(stage, s"Task serialization failed: $e",Some(e))
         runningStages -= stage
         return
     }
@@ -484,7 +484,7 @@ private[spark] class DAGScheduler(
       }
     } catch {
       case NonFatal(e) =>
-        //TODO abortStage
+        abortStage(stage,"Task creation failed: $e",Some(e))
         runningStages -= stage
         return
     }
@@ -495,7 +495,7 @@ private[spark] class DAGScheduler(
       stage.pendingPartitons ++= tasks.map(_.partitionId)
       taskScheduler.submitTasks(new TaskSet(
         tasks.toArray, stage.id, stage.latestInfo.attempteId, jobId, properties))
-      stage.latestInfo._submissionTime = Some(System.currentTimeMillis())
+      stage.latestInfo.submissionTime = Some(System.currentTimeMillis())
     } else {
       //TODO 处理任务运行完毕
     }
@@ -503,6 +503,116 @@ private[spark] class DAGScheduler(
 
   def getPreferredLocs(rdd:RDD[_],partition:Int):Seq[TaskLocation]={
     Seq(TaskLocation("testLocationHost","testExecutorID"))
+  }
+
+  /**当一个stage任务失败时，调用这个方法。主要通知其他依赖这个stage的job也标记为失败*/
+  private[scheduler] def abortStage(
+                                   failedStage:Stage,
+                                   reason:String,
+                                   exception: Option[Throwable]
+                                   ):Unit = {
+    if(!stageIdToStage.contains(failedStage.id)){
+      /**如果stageIdtoStage中已经被移除了*/
+      return
+    }
+
+    val dependentJobs : Seq[ActiveJob] =
+      activeJobs.filter(job => stageDependOn(job.finalStage,failedStage)).toSeq
+    failedStage.latestInfo.completionTime = Some(System.currentTimeMillis())
+    for(job <- dependentJobs){
+      failJobAndIndependentStages(job,s"Job aborted due to stage failure: $reason ",exception)
+    }
+    if (dependentJobs.isEmpty){
+      logInfo("Ignoreing failure of +" + failedStage + "because all jobs depending on it are done")
+    }
+  }
+
+  /**停止所有与job相关的task*/
+  private def failJobAndIndependentStages(
+                                          job:ActiveJob,
+                                          failureReason:String,
+                                          exception:Option[Throwable] = None
+                                          ) :Unit ={
+    val error = new SparkException(failureReason,exception.orNull)
+
+    /**依赖job的所有stage*/
+    val stages = jobIdToStageIds(job.jobId)
+
+    if(stages.isEmpty)
+      logError("No stages registered for job "+ job.jobId)
+
+    /**循环遍历所有stage，若stage只与这一个job相关，那么取消这个stage*/
+    stages.foreach{stageId =>
+      val jobsForStage = stageIdToStage.get(stageId).map(_.jobIds)
+      if(jobsForStage.isEmpty || !jobsForStage.get.contains(job.jobId)){
+        logError("Job %d not registered for stage %d even though that stage was registered for the job".format(job.jobId,stageId))
+      } else if (jobsForStage.get.size == 1){
+        val stage = stageIdToStage(stageId)
+        if (runningStages.contains(stage)){
+          try{
+            taskScheduler.canelTasks(stageId,interruptThread = true)
+            markeStageAsFinished(stage,Some(failureReason))
+          } catch {
+            case e : UnsupportedOperationException =>
+              logInfo(s"could not cancel for stage $stageId")
+          }
+        }
+      }
+    }
+  }
+
+  /**
+    * 查看stage的依赖链中，是否包含target stage，即 target是否是stage的祖先
+    * */
+  private def stageDependOn(stage:Stage,target:Stage) : Boolean = {
+    if(stage == target)
+      return true
+    /**记录stage以来的所有RDD*/
+    val visitedRdds = new mutable.HashSet[RDD[_]]
+    /**维护一个堆栈用来记录哪些rdd需要被遍历*/
+    val waitingForVisit = new mutable.Stack[RDD[_]]
+    def visit(rdd:RDD[_]) {
+      if(!visitedRdds.contains(rdd)) {
+        visitedRdds.add(rdd)
+        for (dep <- rdd.dependencies) {
+          dep match {
+            case shufDep: ShuffleDependency[_, _, _] =>
+              val mapStage = getShuffleMapStage(shufDep, stage.firstJobId)
+              /** 当该stage还未计算完成时 */
+              if (!mapStage.isAvailable) {
+                waitingForVisit.push(mapStage.rdd)
+              }
+            case narrowDep: NarrowDependency[_] =>
+              waitingForVisit.push(narrowDep.rdd)
+          }
+        }
+      }
+    }
+    waitingForVisit.push(stage.rdd)
+    while (waitingForVisit.nonEmpty){
+      visit(waitingForVisit.pop())
+    }
+    visitedRdds.contains(target.rdd)
+  }
+
+  /**完成一个Stage，可能是失败，也有可能是运行成功*/
+  private def markeStageAsFinished(stage:Stage,errorMessage:Option[String]=None):Unit={
+    val serviceTime = stage.latestInfo.submissionTime match {
+      case Some(t) => "%0.03f".format((System.currentTimeMillis() - t) / 1000)
+      case _ => "Unknown"
+    }
+
+    if(errorMessage.isEmpty){
+      logInfo("%s finished in %s s".format(stage,serviceTime))
+      stage.latestInfo.completionTime = Some(System.currentTimeMillis())
+    } else {
+      stage.latestInfo.stageFailed(errorMessage.get)
+      logInfo(s"$stage failed in $serviceTime s due to ${errorMessage.get}")
+    }
+
+    //TODO outputcommitCoordinator
+    //TODO listenerBus
+    runningStages -= stage
   }
 
   eventProcessLoop.start()

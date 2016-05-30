@@ -99,7 +99,18 @@ private[spark] class TaskSchedulerImpl(
 
   override def defaultParallelism(): Int = ???
 
-  override def canelTasks(stageId: Int, interruptThread: Boolean): Unit = ???
+  override def canelTasks(stageId: Int, interruptThread: Boolean): Unit = {
+    logInfo("Cancelling stage " + stageId)
+    taskSetsByStagewIdAndAttempt.get(stageId).foreach{ attempt =>
+      attempt.foreach{ case (_,tsm) =>
+          tsm.runningTaskSet.foreach{tid =>
+            val execId = taskIdToExecutorId(tid)
+            _backend.killTask(tid,execId,interruptThread)
+          }
+      }
+    }
+
+  }
 
   def taskSetFinished(manager:TaskSetManager)={
     ???

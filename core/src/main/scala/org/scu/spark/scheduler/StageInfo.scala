@@ -15,9 +15,17 @@ class StageInfo (
                 private[spark] val taskLocalityPreferences :Seq[Seq[TaskLocation]] = Seq.empty
                   ){
   /**从DAGScheduler向taskscheduler提交的时间*/
-  var _submissionTime : Option[Long] = None
+  var submissionTime : Option[Long] = None
 
+  /**stage完成或取消的时间*/
+  var completionTime : Option[Long] = None
 
+  var failureReason : Option[String] = None
+
+  def stageFailed(reason:String): Unit ={
+    failureReason = Some(reason)
+    completionTime = Some(System.currentTimeMillis())
+  }
 }
 
 private[spark] object StageInfo{

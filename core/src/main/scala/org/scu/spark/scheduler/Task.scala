@@ -25,6 +25,10 @@ private[spark] abstract class Task[T](
                                      internalAccumulators:Seq[Accumulator[Long]]
                                        ) extends Serializable{
 
+  /**当前线程就是一个TaskRunner*/
+  @transient @volatile private var taskThread : Thread = _
+
+  @volatile @transient private var _killed = false
 
   final def run(
                taskAttemptId:Long,
@@ -33,6 +37,14 @@ private[spark] abstract class Task[T](
                  ):T={
     //blockManager registerTask
     ???
+  }
+
+  /**中断当前taskRunner进程*/
+  def kill(interruptThread:Boolean): Unit = {
+    _killed = true
+    if(interruptThread && taskThread != null){
+      taskThread.interrupt()
+    }
   }
 }
 

@@ -61,6 +61,12 @@ class Executor(
     threadPool.execute(tr)
   }
 
+  def killTask(taskId:Long,interruptThread:Boolean) ={
+    val tr = runningTasks.get(taskId)
+    if(tr != null){
+      tr.kill(interruptThread)
+    }
+  }
   /**运行task的主体*/
   class TaskRunner(
                   executorBackend: ExecutorBackend,
@@ -75,8 +81,21 @@ class Executor(
     /**任务运行之前，JVM的GC time*/
     @volatile var startGCTime : Long = _
 
+    private var finished = false
+
     @volatile var task:Task[Any] = _
 
+    def kill(interruptThread:Boolean) ={
+      logInfo(s"Executor is trying to kill $taskName (TID $taskId)")
+      killed = true
+      if( task != null){
+        synchronized{
+          if(!finished){
+            task.kill(interruptThread)
+          }
+        }
+      }
+    }
     /**JVM GC时间*/
     private def computeTotalGCTime():Long = {
       ManagementFactory.getGarbageCollectorMXBeans.asScala.map(_.getCollectionTime).sum
