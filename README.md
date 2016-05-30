@@ -6,5 +6,6 @@
 ## 目录
 
 * core：     spark核心代码
+             其中resources中包含一些比较复杂逻辑的序列图(plantUML)
 * akka-learning:  涉及到akka的相关知识内容
 * scala-learning: 涉及到scala的相关知识内容

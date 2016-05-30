@@ -1,0 +1,22 @@
+'当一个DAGScheduler因为任务失败停止一个stage调用abortStage时，所经历的过程'
+@startuml
+DAGScheduler -> DAGScheduler: abortStage
+DAGScheduler -> TaskSchedulerImpl : canelTasks(stageId,interruptThread)
+
+TaskSchedulerImpl -> CoarseGrainedSchedulerBackend: killTask method
+CoarseGrainedSchedulerBackend -> CoarseGrainedSchedulerBackend : KillTask(taskId,executorId) through rpc
+
+== 跨节点消息传递 driver 到 executor ==
+
+CoarseGrainedSchedulerBackend ->CoarseGrainedExecutorBackend : KillTask(taskId,executorId) through rpc
+note left : SchedulerBackend通过 \n ExecutorDataMap获取 \n Executor的endpoint
+
+CoarseGrainedExecutorBackend -> Executor : killTask(taskId)
+
+Executor -> TaskRunner : kill
+note left : 通过runningTasks 获取 \n 对应taskId的TaskRunner实体
+
+TaskRunner -> Task : kill
+
+DAGScheduler -> DAGScheduler: runningStages -= stage
+@enduml
