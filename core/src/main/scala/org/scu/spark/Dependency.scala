@@ -7,7 +7,7 @@ import scala.reflect.ClassTag
 /**
  * Created by bbq on 2015/11/16
  */
-abstract class Dependency[T]{
+abstract class Dependency[T] extends Serializable{
   def rdd:RDD[T]
 }
 
